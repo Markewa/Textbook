@@ -1,0 +1,1519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Counting Steps — Analysis of Algorithms</title>
+<meta name="description" content="E-textbook for bachelor's students on the mathematical analysis of nonrecursive and recursive algorithms (Levitin, sections 2.3–2.5).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/mathjax-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" async></script>
+</head>
+<body>
+<div class="band">
+  <div class="band-inner">
+    <div class="kicker">E-textbook · Design and Analysis of Algorithms · Levitin §2.3–2.5</div>
+    <h1>Counting <span>Steps</span></h1>
+    <p>How to find out how much work an algorithm does — by adding up its loops and by solving the recurrences of its recursive calls. Written for bachelor's students; every formula comes with a worked example, a quiz and problems with full solutions.</p>
+    <div class="formula-strip">
+      <span><b>Σ</b> sums for loops</span>
+      <span><b>x(n)</b> recurrences for recursion</span>
+      <span><b>Θ</b> order of growth as the answer</span>
+      <span><b>#</b> an operation counter to check it</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+<nav class="toc closed" id="toc" aria-label="Table of contents">
+  <button class="toc-toggle" id="tocToggle" aria-expanded="false">Contents ▾</button>
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#intro">0 · Before you start</a>
+      <ol>
+        <li><a href="#how-to-use">How to use this book</a></li>
+        <li><a href="#size">Input size and basic operation</a></li>
+        <li><a href="#growth">Order of growth</a></li>
+        <li><a href="#notation">O, Ω and Θ</a></li>
+        <li><a href="#cases">Worst, best, average</a></li>
+        <li><a href="#entry-quiz">Entry quiz</a></li>
+      </ol>
+    </li>
+    <li><a href="#m1">1 · Nonrecursive algorithms</a>
+      <ol>
+        <li><a href="#m1-plan">General plan</a></li>
+        <li><a href="#m1-sums">Summation tools</a></li>
+        <li><a href="#m1-examples">Worked examples</a></li>
+        <li><a href="#m1-original">Two new examples</a></li>
+        <li><a href="#m1-average">Average case</a></li>
+        <li><a href="#m1-mistakes">Typical mistakes</a></li>
+        <li><a href="#m1-empirical">Empirical check</a></li>
+        <li><a href="#m1-quiz">Quiz</a></li>
+        <li><a href="#m1-problems">Problems</a></li>
+        <li><a href="#m1-summary">Summary and cheat sheet</a></li>
+      </ol>
+    </li>
+    <li><a href="#m2">2 · Recursive algorithms</a>
+      <ol>
+        <li><a href="#m2-plan">General plan</a></li>
+        <li><a href="#m2-backward">Backward substitutions</a></li>
+        <li><a href="#m2-examples">Worked examples</a></li>
+        <li><a href="#m2-original">Two new examples</a></li>
+        <li><a href="#m2-fib">Warning: Fibonacci</a></li>
+        <li><a href="#m2-stack">Recursion vs. iteration</a></li>
+        <li><a href="#m2-quiz">Quiz</a></li>
+        <li><a href="#m2-problems">Problems</a></li>
+        <li><a href="#m2-summary">Summary and cheat sheet</a></li>
+      </ol>
+    </li>
+    <li><a href="#back">Reference</a>
+      <ol>
+        <li><a href="#glossary">Glossary</a></li>
+        <li><a href="#sources">Sources</a></li>
+        <li><a href="#results">My results</a></li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+
+<main>
+<!-- ============================== INTRO ============================== -->
+<div class="chapter" id="intro">
+  <header><div class="kicker">Part 0 · Review</div><h2>Before you start</h2></header>
+
+  <section class="sec" id="how-to-use">
+    <h3><span class="num">0.1</span>How to use this book</h3>
+    <p>The book has an introductory review and two modules. <b>Module 1</b> analyses algorithms built from loops; the main tool is the <dfn>sum</dfn>. <b>Module 2</b> analyses algorithms that call themselves; the main tool is the <dfn>recurrence relation</dfn>.</p>
+    <p>Each module follows the same order: goals → general plan → tools → worked examples → quiz → problems → summary. Problems have three closed blocks: <b>Hint</b>, <b>Answer</b> and <b>Solution</b>. Try the problem first, open the hint only when you are stuck, and open the solution last.</p>
+    <div class="legend-lvls">
+      <span><span class="lvl a">A</span> basic: apply one formula</span>
+      <span><span class="lvl b">B</span> intermediate: nested sums, cases, recurrences</span>
+      <span><span class="lvl c">C</span> advanced: average case, logarithms, proofs</span>
+      <span><span class="lvl m">M</span> find the mistake</span>
+      <span><span class="lvl e">E</span> empirical: write code</span>
+    </div>
+    <p>Pseudocode uses the notation of Levitin's textbook (<code>←</code> for assignment, <code>A[0..n−1]</code> for an array, indentation for blocks). Program code is Python 3.</p>
+  </section>
+
+  <section class="sec" id="size">
+    <h3><span class="num">0.2</span>Input size and basic operation</h3>
+    <p>We do not measure time in seconds: seconds depend on the computer, the language and the compiler. Instead we count how many times the algorithm repeats its most important step.</p>
+    <p><dfn>Input size</dfn> \(n\) is a number that says how big the input is. For an array it is the number of elements; for an \(n\times n\) matrix it is \(n\); for an algorithm that works with one integer \(N\) (for example, a primality test) it is the number of bits, \(b=\lfloor\log_2 N\rfloor+1\).</p>
+    <p><dfn>Basic operation</dfn> is the operation that contributes most to the running time. Usually it is the operation in the innermost loop: a comparison in searching and sorting, a multiplication in matrix algorithms, an addition in summing.</p>
+    <p>If \(C(n)\) is the number of times the basic operation is executed and \(c_{op}\) is the time of one execution, then the running time is approximately</p>
+    <div class="mathblock">\[ T(n) \approx c_{op}\, C(n). \]</div>
+    <div class="note"><span class="lbl">Why this is enough</span>Suppose \(C(n)=\tfrac12 n(n-1)\). How much longer does the algorithm run on an input twice as large? \(\dfrac{T(2n)}{T(n)}\approx\dfrac{\tfrac12(2n)^2}{\tfrac12 n^2}=4\). We got the answer without knowing \(c_{op}\) at all.</div>
+  </section>
+
+  <section class="sec" id="growth">
+    <h3><span class="num">0.3</span>Order of growth</h3>
+    <p>For small \(n\) almost every algorithm is fast. What separates good algorithms from bad ones is how fast \(C(n)\) grows when \(n\) becomes large. That is the <dfn>order of growth</dfn>. The basic efficiency classes, from slowest-growing to fastest-growing:</p>
+    <div class="tscroll"><table class="t">
+      <thead><tr><th>Class</th><th>Name</th><th>Typical algorithm</th><th>n = 10</th><th>n = 1000</th></tr></thead>
+      <tbody>
+        <tr><td>\(1\)</td><td>constant</td><td>access A[i]</td><td class="n">1</td><td class="n">1</td></tr>
+        <tr><td>\(\log n\)</td><td>logarithmic</td><td>binary search</td><td class="n">3.3</td><td class="n">10</td></tr>
+        <tr><td>\(n\)</td><td>linear</td><td>sequential search</td><td class="n">10</td><td class="n">1 000</td></tr>
+        <tr><td>\(n\log n\)</td><td>linearithmic</td><td>mergesort</td><td class="n">33</td><td class="n">≈ 10 000</td></tr>
+        <tr><td>\(n^2\)</td><td>quadratic</td><td>selection sort</td><td class="n">100</td><td class="n">10<sup>6</sup></td></tr>
+        <tr><td>\(n^3\)</td><td>cubic</td><td>matrix multiplication</td><td class="n">1 000</td><td class="n">10<sup>9</sup></td></tr>
+        <tr><td>\(2^n\)</td><td>exponential</td><td>all subsets</td><td class="n">1 024</td><td class="n">≈ 10<sup>301</sup></td></tr>
+        <tr><td>\(n!\)</td><td>factorial</td><td>all permutations</td><td class="n">3.6·10<sup>6</sup></td><td class="n">≈ 10<sup>2567</sup></td></tr>
+      </tbody>
+    </table></div>
+    <figure>
+      <div class="fig-ctrl">
+        <span>Scale of the vertical axis:</span>
+        <div class="seg" role="group" aria-label="Axis scale"><button type="button" id="gLin" aria-pressed="true">linear</button><button type="button" id="gLog" aria-pressed="false">logarithmic</button></div>
+      </div>
+      <div class="svg-scroll"><svg id="growthChart" viewBox="0 0 640 330" role="img" aria-label="Growth of log n, n, n log n, n squared and 2 to the n for n from 1 to 20"></svg></div>
+      <figcaption><b>Figure 0.1.</b> Growth of the basic functions for \(n=1,\dots,20\). On the linear scale \(2^n\) leaves the chart almost immediately; switch to the logarithmic scale to see all curves together.</figcaption>
+    </figure>
+    <p>Two rules follow from the table. Constant factors do not change the class: \(5n^2\) and \(0.01n^2\) are both quadratic. Lower-order terms do not matter: \(n^2+100n+7\) grows like \(n^2\).</p>
+  </section>
+
+  <section class="sec" id="notation">
+    <h3><span class="num">0.4</span>O, Ω and Θ notations</h3>
+    <p>Let \(t(n)\) be the count of an algorithm and \(g(n)\) a simple comparison function such as \(n^2\).</p>
+    <ul>
+      <li>\(t(n)\in O(g(n))\) — "<b>at most</b> of order \(g\)": there are \(c>0\) and \(n_0\) such that \(t(n)\le c\,g(n)\) for all \(n\ge n_0\).</li>
+      <li>\(t(n)\in \Omega(g(n))\) — "<b>at least</b> of order \(g\)": \(t(n)\ge c\,g(n)\) for all \(n\ge n_0\).</li>
+      <li>\(t(n)\in \Theta(g(n))\) — "<b>exactly</b> of order \(g\)": \(c_2 g(n)\le t(n)\le c_1 g(n)\) for all \(n\ge n_0\). This is both \(O\) and \(\Omega\).</li>
+    </ul>
+    <p><b>Example.</b> \(\tfrac12 n(n-1)\in\Theta(n^2)\). Upper bound: \(\tfrac12 n^2-\tfrac12 n\le \tfrac12 n^2\) for all \(n\ge 0\). Lower bound: \(\tfrac12 n^2-\tfrac12 n\ge \tfrac14 n^2\) when \(n\ge 2\). So \(c_1=\tfrac12\), \(c_2=\tfrac14\), \(n_0=2\).</p>
+    <p>The easiest way to compare two functions is the <dfn>limit rule</dfn>:</p>
+    <div class="mathblock">\[ \lim_{n\to\infty}\frac{t(n)}{g(n)}=\begin{cases}0 & t \text{ grows slower: } t\in O(g)\\ c>0 & \text{same order: } t\in\Theta(g)\\ \infty & t \text{ grows faster: } t\in\Omega(g)\end{cases} \]</div>
+    <p>In this book the final answer of every analysis is a \(\Theta\)-class, and when possible also the exact formula for the count.</p>
+  </section>
+
+  <section class="sec" id="cases">
+    <h3><span class="num">0.5</span>Worst, best and average case</h3>
+    <p>For some algorithms the count depends not only on \(n\) but on the particular input. Sequential search stops when it finds the key, so it may do 1 comparison or \(n\).</p>
+    <ul>
+      <li><dfn>Worst case</dfn> \(C_{worst}(n)\): the largest count over all inputs of size \(n\). It is a guarantee: the algorithm never does more.</li>
+      <li><dfn>Best case</dfn> \(C_{best}(n)\): the smallest count over all inputs of size \(n\).</li>
+      <li><dfn>Average case</dfn> \(C_{avg}(n)\): the expected count for a "typical" random input. To compute it we must state assumptions about the probability of each input.</li>
+    </ul>
+    <p>If the count is the same for all inputs of size \(n\) (finding the maximum, multiplying matrices), there is only one case and we just compute \(C(n)\).</p>
+  </section>
+
+  <section class="sec" id="entry-quiz">
+    <h3><span class="num">0.6</span>Entry quiz</h3>
+    <p>Five questions on what you need before the modules. If you get fewer than four right, reread sections 0.2–0.5.</p>
+    <div class="quiz" data-quiz="entry" data-title="Entry quiz">
+      <div class="qitem" data-answer="c">
+        <p>What is the natural input size for an algorithm that sorts an array <code>A[0..n−1]</code>?</p>
+        <ol class="opts">
+          <li data-k="a">The largest value in the array<span class="why">Values do not tell how much work there is: sorting [1, 2] and [1000, 2000] takes the same steps.</span></li>
+          <li data-k="b">The number of swaps the algorithm makes<span class="why">Swaps are something we count, not the size of the input.</span></li>
+          <li data-k="c">The number of elements \(n\)<span class="why"><b>Correct.</b> For array algorithms the size is the number of elements.</span></li>
+          <li data-k="d">The number of bits in the whole array<span class="why">Possible in theory, but for arrays of normal numbers the element count is the standard choice and gives the same order.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="b">
+        <p>An algorithm has \(C(n)=3n^2+20n\). Which statement is true?</p>
+        <ol class="opts">
+          <li data-k="a">\(C(n)\in\Theta(n)\)<span class="why">The term \(3n^2\) grows faster than any multiple of \(n\).</span></li>
+          <li data-k="b">\(C(n)\in\Theta(n^2)\)<span class="why"><b>Correct.</b> Drop the constant 3 and the lower-order term \(20n\).</span></li>
+          <li data-k="c">\(C(n)\in\Theta(n^3)\)<span class="why">\(C(n)\in O(n^3)\) is true, but \(\Theta(n^3)\) would need \(C(n)\ge c\,n^3\), which fails.</span></li>
+          <li data-k="d">\(C(n)\in\Theta(20n)\)<span class="why">Lower-order terms do not decide the class; the highest power does.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="a">
+        <p>Which function grows the fastest?</p>
+        <ol class="opts">
+          <li data-k="a">\(2^n\)<span class="why"><b>Correct.</b> Exponential functions overtake every polynomial: \(\lim n^{100}/2^n=0\).</span></li>
+          <li data-k="b">\(n^{3}\)<span class="why">Cubic is a polynomial; \(2^n\) passes it already at \(n=10\).</span></li>
+          <li data-k="c">\(n\log n\)<span class="why">Only slightly faster than linear.</span></li>
+          <li data-k="d">\(n^2\)<span class="why">Quadratic is slower-growing than both \(n^3\) and \(2^n\).</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="d">
+        <p>\(t(n)\in O(g(n))\) means that…</p>
+        <ol class="opts">
+          <li data-k="a">\(t(n)=g(n)\) for all \(n\)<span class="why">O-notation ignores constants and small \(n\); equality is not required.</span></li>
+          <li data-k="b">\(t(n)\ge c\,g(n)\) for large \(n\)<span class="why">That is the definition of \(\Omega\), a lower bound.</span></li>
+          <li data-k="c">\(t(n)\) and \(g(n)\) have the same order<span class="why">That is \(\Theta\). \(O\) gives only an upper bound: \(n\in O(n^2)\) is true.</span></li>
+          <li data-k="d">\(t(n)\le c\,g(n)\) for all \(n\ge n_0\)<span class="why"><b>Correct.</b> \(g\) is an upper bound up to a constant factor, for large enough \(n\).</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="b">
+        <p>Sequential search looks for a key in an array of \(n\) elements. What is its best case number of comparisons?</p>
+        <ol class="opts">
+          <li data-k="a">0<span class="why">At least one comparison is needed to look at the first element.</span></li>
+          <li data-k="b">1<span class="why"><b>Correct.</b> The key is the first element.</span></li>
+          <li data-k="c">\(n/2\)<span class="why">That is close to the average case when the key is present, not the best case.</span></li>
+          <li data-k="d">\(n\)<span class="why">That is the worst case.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+  <div class="pagenav"><span></span><a href="#m1">Module 1: Nonrecursive algorithms →</a></div>
+</div>
+
+<!-- ============================== MODULE 1 ============================== -->
+<div class="chapter" id="m1">
+  <header><div class="kicker">Module 1 · Lecture 4 · Levitin §2.3</div><h2>Analysis of nonrecursive algorithms</h2></header>
+
+  <div class="goals">
+    <h3>Goals and learning outcomes</h3>
+    <p><b>Goal:</b> learn to turn the loops of an algorithm into a sum and to compute that sum.</p>
+    <p class="small muted">After this module you will be able to:</p>
+    <ul>
+      <li>apply the five-step plan to any algorithm built from loops;</li>
+      <li>choose the input size and the basic operation correctly;</li>
+      <li>compute sums with the standard rules and formulas, including loops with dependent bounds and loops whose counter doubles;</li>
+      <li>separate the worst, best and average cases and compute the average for sequential search;</li>
+      <li>recognise six typical mistakes;</li>
+      <li>check a derived formula by counting operations in Python.</li>
+    </ul>
+  </div>
+
+  <section class="sec" id="m1-plan">
+    <h3><span class="num">1.1</span>The general plan of analysis</h3>
+    <p>Every analysis of a nonrecursive algorithm follows five steps. Learn them in this order; the worked examples below always use the same steps.</p>
+    <ol class="plan">
+      <li><b>Choose the input size \(n\).</b> What number describes how big the input is? <span class="muted">Typical mistake: taking the value of a number instead of its size in bits.</span></li>
+      <li><b>Identify the basic operation.</b> Usually it sits in the innermost loop. <span class="muted">Typical mistake: counting the loop index increment or an assignment that does not happen every time.</span></li>
+      <li><b>Check whether the count depends only on \(n\).</b> If the algorithm can stop early, analyse the worst, best (and if needed average) case separately. <span class="muted">Typical mistake: mixing the cases in one formula.</span></li>
+      <li><b>Write a sum</b> for the number of times the basic operation runs: one \(\Sigma\) per loop, with the same bounds as the loop. <span class="muted">Typical mistake: off-by-one bounds.</span></li>
+      <li><b>Find a closed formula</b> for the sum, or at least its order of growth. <span class="muted">Typical mistake: forgetting that the inner bound depends on the outer index.</span></li>
+    </ol>
+  </section>
+
+  <section class="sec" id="m1-sums">
+    <h3><span class="num">1.2</span>Summation tools</h3>
+    <p>A loop <code>for i ← l to u do</code> with a body that costs \(a_i\) gives the sum \(\sum_{i=l}^{u} a_i\). Two manipulation rules are enough for almost everything:</p>
+    <div class="mathblock">\[ \text{(R1)}\ \ \sum_{i=l}^{u} c\,a_i = c\sum_{i=l}^{u} a_i \qquad\qquad \text{(R2)}\ \ \sum_{i=l}^{u}(a_i\pm b_i)=\sum_{i=l}^{u} a_i\pm\sum_{i=l}^{u} b_i \]</div>
+    <p>R1 takes a constant out of the sum. R2 splits a sum of two terms into two sums.</p>
+    <h4>Counting terms</h4>
+    <p>The simplest sum counts how many values the index takes. From \(l\) to \(u\) there are \(u-l+1\) of them:</p>
+    <div class="mathblock">\[ \text{(S1)}\ \ \sum_{i=l}^{u} 1 = u-l+1 \qquad (l\le u). \]</div>
+    <p>Check on a small case: \(\sum_{i=2}^{5}1\) has terms for \(i=2,3,4,5\), which is 4, and \(5-2+1=4\). Always check bounds like this: off-by-one errors are the most frequent mistake.</p>
+    <h4>The standard formulas</h4>
+    <div class="mathblock">\[ \text{(S2)}\ \ \sum_{i=1}^{n} i = 1+2+\dots+n=\frac{n(n+1)}{2}\approx\frac{n^2}{2}\in\Theta(n^2) \]</div>
+    <div class="mathblock">\[ \text{(S3)}\ \ \sum_{i=1}^{n} i^2 = \frac{n(n+1)(2n+1)}{6}\approx\frac{n^3}{3}\in\Theta(n^3) \]</div>
+    <div class="mathblock">\[ \text{(S4)}\ \ \sum_{i=0}^{n} a^i = 1+a+\dots+a^n=\frac{a^{n+1}-1}{a-1}\ \ (a\ne1),\qquad \sum_{i=0}^{n}2^i=2^{n+1}-1 \]</div>
+    <div class="mathblock">\[ \text{(S5)}\ \ \sum_{i=1}^{n} i^k \approx \frac{n^{k+1}}{k+1}\in\Theta(n^{k+1}) \]</div>
+    <figure>
+      <div class="svg-scroll"><svg id="stairFig" viewBox="0 0 560 250" role="img" aria-label="Staircase of dots: rows of 1, 2, ... n dots fill half of an n by n+1 rectangle"></svg></div>
+      <figcaption><b>Figure 1.1.</b> Why \(1+2+\dots+n=\tfrac{n(n+1)}2\) (shown for \(n=6\)). Row \(i\) has \(i\) blue dots. Together with an equal staircase of grey dots turned upside down they fill an \(n\times(n+1)\) rectangle, so one staircase is half of it.</figcaption>
+    </figure>
+    <div class="note"><span class="lbl">Shifted bounds</span>If a sum starts at 0 or ends at \(n-1\), rewrite it with S2 directly: \(\sum_{i=0}^{n-1} i = 0+1+\dots+(n-1)=\frac{(n-1)n}{2}\). The term \(i=0\) adds nothing; the last term is \(n-1\), so replace \(n\) by \(n-1\) in S2.</div>
+  </section>
+
+  <section class="sec" id="m1-examples">
+    <h3><span class="num">1.3</span>Worked examples</h3>
+    <p>Five examples from the lecture, each in the five steps of the plan.</p>
+
+    <div class="example" id="ex-max">
+      <div class="ex-head"><span class="tag">Example 1.1</span><h4>Largest element of an array</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> MaxElement(A[0..n−1])
+    <i>// Returns the value of the largest element in A</i>
+    maxval ← A[0]
+    <b>for</b> i ← 1 <b>to</b> n − 1 <b>do</b>
+        <b>if</b> A[i] > maxval
+            maxval ← A[i]
+    <b>return</b> maxval</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\), the number of elements.</span></li>
+          <li><span class="k">Basic op.</span><span class="v">The comparison \(A[i]>maxval\). It runs on every iteration. The assignment <code>maxval ← A[i]</code> runs only sometimes, so it is not a good choice.</span></li>
+          <li><span class="k">Cases</span><span class="v">The loop always makes \(n-1\) iterations: one case.</span></li>
+          <li><span class="k">Sum</span><span class="v">\(C(n)=\sum_{i=1}^{n-1}1\)</span></li>
+          <li><span class="k">Solution</span><span class="v">By S1: \(C(n)=(n-1)-1+1=n-1\). <span class="result">\(C(n)=n-1\in\Theta(n)\).</span></span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="example" id="ex-unique">
+      <div class="ex-head"><span class="tag">Example 1.2</span><h4>Are all elements distinct?</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> UniqueElements(A[0..n−1])
+    <i>// Returns true if all elements of A are distinct, false otherwise</i>
+    <b>for</b> i ← 0 <b>to</b> n − 2 <b>do</b>
+        <b>for</b> j ← i + 1 <b>to</b> n − 1 <b>do</b>
+            <b>if</b> A[i] = A[j] <b>return</b> false
+    <b>return</b> true</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">The comparison \(A[i]=A[j]\) in the inner loop.</span></li>
+          <li><span class="k">Cases</span><span class="v">The algorithm can stop early, so there are cases. <b>Worst case:</b> the loops never stop early — all elements are distinct, or the only equal pair is the last pair compared. <b>Best case:</b> \(A[0]=A[1]\); the first comparison finds it.</span></li>
+          <li><span class="k">Sum (worst)</span><span class="v">\(C_{worst}(n)=\sum_{i=0}^{n-2}\sum_{j=i+1}^{n-1}1\)</span></li>
+          <li><span class="k">Solution</span><span class="v">
+            <p>Inner sum by S1: \(\sum_{j=i+1}^{n-1}1=(n-1)-(i+1)+1=n-1-i\). Then</p>
+            <div class="mathblock">\[ C_{worst}(n)=\sum_{i=0}^{n-2}(n-1-i)=(n-1)+(n-2)+\dots+1=\frac{(n-1)n}{2}. \]</div>
+            <p class="result">\(C_{worst}(n)=\frac{n(n-1)}2\in\Theta(n^2)\), \(C_{best}(n)=1\in\Theta(1)\).</p></span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="example" id="ex-matrix">
+      <div class="ex-head"><span class="tag">Example 1.3</span><h4>Matrix multiplication</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> MatrixMultiplication(A[0..n−1, 0..n−1], B[0..n−1, 0..n−1])
+    <i>// Multiplies two square matrices of order n</i>
+    <b>for</b> i ← 0 <b>to</b> n − 1 <b>do</b>
+        <b>for</b> j ← 0 <b>to</b> n − 1 <b>do</b>
+            C[i, j] ← 0
+            <b>for</b> k ← 0 <b>to</b> n − 1 <b>do</b>
+                C[i, j] ← C[i, j] + A[i, k] * B[k, j]
+    <b>return</b> C</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">The matrix order \(n\).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">Multiplication in the innermost loop. (Addition runs the same number of times, so it gives the same answer.)</span></li>
+          <li><span class="k">Cases</span><span class="v">No early exit: one case.</span></li>
+          <li><span class="k">Sum</span><span class="v">\(M(n)=\sum_{i=0}^{n-1}\sum_{j=0}^{n-1}\sum_{k=0}^{n-1}1\)</span></li>
+          <li><span class="k">Solution</span><span class="v">Each sum is independent and has \(n\) terms: \(M(n)=\sum_{i}\sum_{j} n=\sum_i n^2=n^3\). <span class="result">\(M(n)=n^3\in\Theta(n^3)\).</span> Doubling \(n\) makes the work 8 times larger.</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="example" id="ex-dependent">
+      <div class="ex-head"><span class="tag">Example 1.4</span><h4>A loop with a dependent bound</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> TriangleCount(n)
+    count ← 0
+    <b>for</b> i ← 1 <b>to</b> n <b>do</b>
+        <b>for</b> j ← 1 <b>to</b> i <b>do</b>
+            count ← count + 1
+    <b>return</b> count</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">The addition <code>count + 1</code>.</span></li>
+          <li><span class="k">Cases</span><span class="v">One case.</span></li>
+          <li><span class="k">Sum</span><span class="v">The inner bound is \(i\), not \(n\): \(C(n)=\sum_{i=1}^{n}\sum_{j=1}^{i}1\).</span></li>
+          <li><span class="k">Solution</span><span class="v">Inner sum \(=i\). Then by S2 \(C(n)=\sum_{i=1}^{n} i=\frac{n(n+1)}2\). <span class="result">\(C(n)=\frac{n(n+1)}2\in\Theta(n^2)\).</span> The count is about half of \(n^2\), the triangle in Figure 1.1.</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="example" id="ex-log">
+      <div class="ex-head"><span class="tag">Example 1.5</span><h4>A multiplicative loop</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> Doubling(n)
+    <i>// n ≥ 1</i>
+    count ← 0;  i ← 1
+    <b>while</b> i ≤ n <b>do</b>
+        count ← count + 1
+        i ← 2 * i
+    <b>return</b> count</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">The comparison \(i\le n\) that is true, i.e. one iteration of the loop body.</span></li>
+          <li><span class="k">Cases</span><span class="v">One case.</span></li>
+          <li><span class="k">Sum</span><span class="v">The counter takes the values \(1,2,4,\dots,2^k\) while \(2^k\le n\). The number of iterations is the number of \(k\ge0\) with \(2^k\le n\), i.e. \(k=0,1,\dots,\lfloor\log_2 n\rfloor\).</span></li>
+          <li><span class="k">Solution</span><span class="v">By S1: \(C(n)=\lfloor\log_2 n\rfloor-0+1\). <span class="result">\(C(n)=\lfloor\log_2 n\rfloor+1\in\Theta(\log n)\).</span> Check: \(n=10\): \(i=1,2,4,8\), four iterations; \(\lfloor\log_2 10\rfloor+1=3+1=4\).</span></li>
+        </ol>
+        <p class="small muted">Rule: when a loop multiplies (or divides) its counter by a constant \(b>1\), it makes about \(\log_b n\) iterations.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="m1-original">
+    <h3><span class="num">1.4</span>Two new examples</h3>
+    <p>These two examples are not in the lecture. They show the same plan on algorithms you know from programming courses.</p>
+
+    <div class="example" id="ex-selection">
+      <div class="ex-head"><span class="tag orig">Example 1.6 · new</span><h4>Selection sort</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> SelectionSort(A[0..n−1])
+    <i>// Sorts A in nondecreasing order</i>
+    <b>for</b> i ← 0 <b>to</b> n − 2 <b>do</b>
+        min ← i
+        <b>for</b> j ← i + 1 <b>to</b> n − 1 <b>do</b>
+            <b>if</b> A[j] &lt; A[min]  min ← j
+        swap A[i] and A[min]</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">The key comparison \(A[j]&lt;A[min]\).</span></li>
+          <li><span class="k">Cases</span><span class="v">There is no early exit; the loops always run fully. So the count is the same for sorted, reversed and random arrays — one case. (The number of <i>assignments</i> <code>min ← j</code> does depend on the input, but we do not count it.)</span></li>
+          <li><span class="k">Sum</span><span class="v">\(C(n)=\sum_{i=0}^{n-2}\sum_{j=i+1}^{n-1}1\) — the same sum as in UniqueElements.</span></li>
+          <li><span class="k">Solution</span><span class="v">\(C(n)=\sum_{i=0}^{n-2}(n-1-i)=\frac{(n-1)n}{2}\). <span class="result">\(C(n)=\frac{n(n-1)}2\in\Theta(n^2)\) for every input.</span> The number of swaps is exactly \(n-1\in\Theta(n)\).</span></li>
+        </ol>
+        <p class="small muted">Compare with Example 1.2: the same double sum, but here the worst and the best case coincide because nothing stops the loops.</p>
+      </div>
+    </div>
+
+    <div class="example" id="ex-poly">
+      <div class="ex-head"><span class="tag orig">Example 1.7 · new</span><h4>Evaluating a polynomial: naive method vs. Horner's rule</h4></div>
+      <div class="ex-body">
+        <p>We want \(p(x)=a_nx^n+\dots+a_1x+a_0\) for a given \(x\). The coefficients are in <code>P[0..n]</code>.</p>
+<pre class="pseudo"><b>ALGORITHM</b> NaivePoly(P[0..n], x)
+    p ← 0
+    <b>for</b> i ← 0 <b>to</b> n <b>do</b>
+        power ← 1
+        <b>for</b> j ← 1 <b>to</b> i <b>do</b>
+            power ← power * x
+        p ← p + P[i] * power
+    <b>return</b> p</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">The degree \(n\) (there are \(n+1\) coefficients).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">Multiplication. There are two: <code>power * x</code> in the inner loop and <code>P[i] * power</code> once per outer iteration. We count both.</span></li>
+          <li><span class="k">Cases</span><span class="v">One case.</span></li>
+          <li><span class="k">Sum</span><span class="v">\(M(n)=\sum_{i=0}^{n}\Big(\sum_{j=1}^{i}1+1\Big)=\sum_{i=0}^{n}(i+1)\)</span></li>
+          <li><span class="k">Solution</span><span class="v">Substitute \(k=i+1\): \(M(n)=\sum_{k=1}^{n+1}k=\frac{(n+1)(n+2)}{2}\). <span class="result">\(M(n)=\frac{(n+1)(n+2)}2\in\Theta(n^2)\).</span></span></li>
+        </ol>
+        <p>The naive method recomputes \(x^i\) from scratch for every term. Horner's rule writes the polynomial as \(p(x)=(\dots((a_nx+a_{n-1})x+a_{n-2})\dots)x+a_0\):</p>
+<pre class="pseudo"><b>ALGORITHM</b> Horner(P[0..n], x)
+    p ← P[n]
+    <b>for</b> i ← n − 1 <b>downto</b> 0 <b>do</b>
+        p ← x * p + P[i]
+    <b>return</b> p</pre>
+        <p>One multiplication per iteration, \(n\) iterations: \(M(n)=\sum_{i=0}^{n-1}1=n\in\Theta(n)\). For \(n=100\) that is 100 multiplications instead of 5151. <b>Lesson:</b> the analysis shows exactly where the waste is — in the inner loop that repeats work.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="m1-average">
+    <h3><span class="num">1.5</span>Average case: sequential search</h3>
+<pre class="pseudo"><b>ALGORITHM</b> SequentialSearch(A[0..n−1], K)
+    i ← 0
+    <b>while</b> i &lt; n <b>and</b> A[i] ≠ K <b>do</b>
+        i ← i + 1
+    <b>if</b> i &lt; n <b>return</b> i  <b>else return</b> −1</pre>
+    <p>Basic operation: the key comparison \(A[i]\ne K\). Worst case \(C_{worst}(n)=n\) (key is last or absent), best case \(C_{best}(n)=1\).</p>
+    <p>For the average case we need assumptions:</p>
+    <ol>
+      <li>the probability that \(K\) is in the array is \(p\) \((0\le p\le 1)\);</li>
+      <li>if it is there, it is equally likely to be in any of the \(n\) positions, so each position has probability \(p/n\).</li>
+    </ol>
+    <p>If \(K\) is at position \(i\) (counting from 1), the algorithm makes \(i\) comparisons. If \(K\) is absent (probability \(1-p\)), it makes \(n\). The average is the sum of "count × probability":</p>
+    <div class="mathblock">\[ C_{avg}(n)=\sum_{i=1}^{n} i\cdot\frac{p}{n}+n(1-p)=\frac{p}{n}\cdot\frac{n(n+1)}{2}+n(1-p)=\frac{p(n+1)}{2}+n(1-p). \]</div>
+    <ul>
+      <li>\(p=1\) (the key is always there): \(C_{avg}=\frac{n+1}{2}\) — on average we look at about half the array.</li>
+      <li>\(p=0\) (never there): \(C_{avg}=n\) — every element is checked.</li>
+    </ul>
+    <div class="note"><span class="lbl">Careful</span>The average case is not "(best + worst)/2". Here \((1+n)/2\) matches only by coincidence when \(p=1\). For \(p=\tfrac12\) the true value is \(\frac{3n+1}{4}\), not \(\frac{n+1}{2}\).</div>
+  </section>
+
+  <section class="sec" id="m1-mistakes">
+    <h3><span class="num">1.6</span>Typical mistakes</h3>
+    <div class="tscroll"><table class="t">
+      <thead><tr><th>Mistake</th><th>What it looks like</th><th>How to avoid it</th></tr></thead>
+      <tbody>
+        <tr><td><b>Wrong basic operation</b></td><td>Counting <code>maxval ← A[i]</code> in MaxElement. It runs a different number of times on different inputs, so the "count" is not a function of \(n\).</td><td>Choose the operation that runs on every pass of the innermost loop.</td></tr>
+        <tr><td><b>Size vs. value</b></td><td>Saying that trial division up to \(N\) is "linear" because it makes about \(N\) steps. The size of \(N\) is \(b\approx\log_2N\) bits, so \(N\approx2^b\): the algorithm is exponential in the size.</td><td>For algorithms on one number, the size is the number of digits or bits.</td></tr>
+        <tr><td><b>Mixing up cases</b></td><td>Writing \(C(n)=\frac{n(n-1)}2\) for UniqueElements without saying "worst case", or averaging best and worst.</td><td>If the algorithm can exit early, name the case before writing the sum.</td></tr>
+        <tr><td><b>Off-by-one</b></td><td>\(\sum_{i=0}^{n-2}1=n-2\). Correct: \(n-1\).</td><td>Use \(u-l+1\) and check with \(n=2\) or \(n=3\) by hand.</td></tr>
+        <tr><td><b>Ignoring an early exit</b></td><td>Treating a loop with <code>return</code> inside as if it always runs to the end.</td><td>Look for <code>return</code>, <code>break</code> and loop conditions with <code>and</code>.</td></tr>
+        <tr><td><b>Hidden cost</b></td><td>Counting a call like <code>Sum(A[0..i])</code> or <code>x ** i</code> or Python's <code>s in list</code> as one step. Each of them hides a loop.</td><td>Expand every operation that is not constant-time into its own loop and its own sum.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="sec" id="m1-empirical">
+    <h3><span class="num">1.7</span>Empirical verification</h3>
+    <p>A formula derived on paper can be wrong. The cheapest test is to put a counter into a real program and compare. The method:</p>
+    <ol class="plan">
+      <li>Translate the pseudocode into Python without changing the loops.</li>
+      <li>Add a variable <code>count</code> and increase it exactly where the basic operation happens — not one line above, not one line below.</li>
+      <li>Run the program for several \(n\), including small ones (1, 2, 3) where off-by-one errors show up.</li>
+      <li>Compare the counter with your formula. Every value must match exactly. If you only know the order of growth, check that the ratio count / \(g(n)\) settles to a constant.</li>
+    </ol>
+<pre class="py"><span class="k">def</span> triangle_count(n):
+    count = 0
+    <span class="k">for</span> i <span class="k">in</span> range(1, n + 1):          <span class="c"># for i ← 1 to n</span>
+        <span class="k">for</span> j <span class="k">in</span> range(1, i + 1):      <span class="c">#   for j ← 1 to i</span>
+            count += 1                  <span class="c">#     basic operation</span>
+    <span class="k">return</span> count
+
+<span class="k">for</span> n <span class="k">in</span> [1, 2, 3, 10, 100]:
+    print(n, triangle_count(n), n * (n + 1) // 2)   <span class="c"># the two columns must be equal</span></pre>
+    <p class="small muted">Note: Python's <code>range(a, b)</code> stops <i>before</i> <code>b</code>, so Levitin's <code>for i ← 1 to n</code> becomes <code>range(1, n + 1)</code>.</p>
+    <div class="lab" id="lab1">
+      <div class="row">
+        <label for="lab1Alg">Algorithm</label>
+        <select id="lab1Alg">
+          <option value="max">MaxElement — n − 1</option>
+          <option value="uniqW">UniqueElements, worst — n(n−1)/2</option>
+          <option value="tri">TriangleCount — n(n+1)/2</option>
+          <option value="mat">MatrixMultiplication — n³</option>
+          <option value="dbl">Doubling — ⌊log₂ n⌋ + 1</option>
+          <option value="sel">SelectionSort — n(n−1)/2</option>
+          <option value="poly">NaivePoly — (n+1)(n+2)/2</option>
+          <option value="horner">Horner — n</option>
+        </select>
+        <button type="button" id="lab1Run">Count</button>
+      </div>
+      <div class="tscroll"><table class="t" id="lab1Table"><thead><tr><th>n</th><th>counted</th><th>formula</th><th>match</th></tr></thead><tbody></tbody></table></div>
+      <p class="small muted" style="margin:0">The lab runs the algorithm in your browser with a counter at the basic operation and compares the count with the formula from this module.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="m1-quiz">
+    <h3><span class="num">1.8</span>Quiz</h3>
+    <p>Ten questions. Each answer shows why it is right or wrong.</p>
+    <div class="quiz" data-quiz="m1" data-title="Module 1 quiz">
+      <div class="qitem" data-answer="b">
+        <p>What is the basic operation of MaxElement?</p>
+        <ol class="opts">
+          <li data-k="a">The assignment <code>maxval ← A[i]</code><span class="why">It runs only when a new maximum appears, so its count depends on the input, not only on \(n\).</span></li>
+          <li data-k="b">The comparison \(A[i]>maxval\)<span class="why"><b>Correct.</b> It runs on every iteration of the only loop.</span></li>
+          <li data-k="c">The increment \(i\leftarrow i+1\)<span class="why">Loop bookkeeping is not the work of the algorithm; we do not count it.</span></li>
+          <li data-k="d">The <code>return</code> statement<span class="why">It runs once and does not grow with \(n\).</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="a">
+        <p>How many terms does \(\sum_{i=2}^{n-1}1\) have?</p>
+        <ol class="opts">
+          <li data-k="a">\(n-2\)<span class="why"><b>Correct.</b> \(u-l+1=(n-1)-2+1=n-2\).</span></li>
+          <li data-k="b">\(n-1\)<span class="why">Off by one: the lower bound is 2, not 1.</span></li>
+          <li data-k="c">\(n-3\)<span class="why">Forgot the "+1" in \(u-l+1\).</span></li>
+          <li data-k="d">\(n\)<span class="why">That would be the count for \(i=1,\dots,n\).</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="c">
+        <p>\(\sum_{i=0}^{n-1} i\) equals…</p>
+        <ol class="opts">
+          <li data-k="a">\(\frac{n(n+1)}{2}\)<span class="why">That is \(\sum_{i=1}^{n} i\); here the last term is \(n-1\).</span></li>
+          <li data-k="b">\(n^2\)<span class="why">Same order, but not the exact value.</span></li>
+          <li data-k="c">\(\frac{(n-1)n}{2}\)<span class="why"><b>Correct.</b> Apply S2 with \(n-1\) instead of \(n\); the term \(i=0\) adds nothing.</span></li>
+          <li data-k="d">\(\frac{n(n+1)(2n+1)}{6}\)<span class="why">That is the formula for the sum of squares.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="d">
+        <p>Which class contains \(\sum_{i=1}^{n} i^2\)?</p>
+        <ol class="opts">
+          <li data-k="a">\(\Theta(n)\)<span class="why">Even \(\sum i\) is already quadratic.</span></li>
+          <li data-k="b">\(\Theta(n^2)\)<span class="why">That is the class of \(\sum i\). Summing squares adds one more power.</span></li>
+          <li data-k="c">\(\Theta(n^2\log n)\)<span class="why">No logarithm appears in power sums.</span></li>
+          <li data-k="d">\(\Theta(n^3)\)<span class="why"><b>Correct.</b> By S5, \(\sum i^k\in\Theta(n^{k+1})\) with \(k=2\).</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="b">
+        <p>An algorithm checks if an integer \(N\) is prime by trying all divisors \(2,\dots,N-1\). What is the right input size?</p>
+        <ol class="opts">
+          <li data-k="a">\(N\) itself<span class="why">This is the "size vs. value" mistake. A 20-digit number is small to write but huge as a value.</span></li>
+          <li data-k="b">The number of bits \(b=\lfloor\log_2N\rfloor+1\)<span class="why"><b>Correct.</b> Then the loop makes about \(N\approx2^b\) steps, which is exponential in the size.</span></li>
+          <li data-k="c">\(\sqrt N\)<span class="why">That is how far a better algorithm needs to search, not the size of the input.</span></li>
+          <li data-k="d">The number of divisors of \(N\)<span class="why">This depends on the answer, not on the input's size.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="c">
+        <p>What is the best-case number of comparisons of UniqueElements?</p>
+        <ol class="opts">
+          <li data-k="a">\(0\)<span class="why">The algorithm must compare at least once (for \(n\ge2\)).</span></li>
+          <li data-k="b">\(n-1\)<span class="why">That would be one pass of the inner loop with \(i=0\), but the loop can stop on its first comparison.</span></li>
+          <li data-k="c">\(1\)<span class="why"><b>Correct.</b> If \(A[0]=A[1]\), the first comparison returns false.</span></li>
+          <li data-k="d">\(\frac{n(n-1)}{2}\)<span class="why">That is the worst case.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="a">
+        <p>How many iterations does <code>i ← 1; while i ≤ n do i ← 2 * i</code> make for \(n=20\)?</p>
+        <ol class="opts">
+          <li data-k="a">5<span class="why"><b>Correct.</b> \(i=1,2,4,8,16\); \(\lfloor\log_2 20\rfloor+1=4+1=5\).</span></li>
+          <li data-k="b">4<span class="why">Forgot the iteration with \(i=1\) (that is \(2^0\)).</span></li>
+          <li data-k="c">\(\log_2 20\approx4.32\)<span class="why">A number of iterations is a whole number; use the floor and add one.</span></li>
+          <li data-k="d">10<span class="why">\(n/2\) would be the answer for a loop that adds 2, not one that doubles.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="d">
+        <p>How many multiplications does the definition-based multiplication of two \(n\times n\) matrices make?</p>
+        <ol class="opts">
+          <li data-k="a">\(n^2\)<span class="why">That is the number of entries in the result; each entry needs \(n\) multiplications.</span></li>
+          <li data-k="b">\(2n^3\)<span class="why">That counts multiplications and additions together.</span></li>
+          <li data-k="c">\(n^3-n^2\)<span class="why">That is close to the number of additions if the first product is not added to 0.</span></li>
+          <li data-k="d">\(n^3\)<span class="why"><b>Correct.</b> Three nested loops of \(n\) iterations each.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="b">
+        <p>In sequential search the key is always present (\(p=1\)). What is \(C_{avg}(n)\)?</p>
+        <ol class="opts">
+          <li data-k="a">\(n\)<span class="why">That is the average when \(p=0\) (the key is never present).</span></li>
+          <li data-k="b">\(\frac{n+1}{2}\)<span class="why"><b>Correct.</b> Put \(p=1\) into \(\frac{p(n+1)}2+n(1-p)\).</span></li>
+          <li data-k="c">\(\frac n2\)<span class="why">Close, but the positions are \(1,\dots,n\), whose average is \(\frac{n+1}2\).</span></li>
+          <li data-k="d">\(1\)<span class="why">That is the best case.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="c">
+        <p>For which algorithm must the worst, best and average case be analysed separately?</p>
+        <ol class="opts">
+          <li data-k="a">MaxElement<span class="why">It always makes \(n-1\) comparisons.</span></li>
+          <li data-k="b">Selection sort (counting comparisons)<span class="why">Its loops never stop early: \(\frac{n(n-1)}2\) comparisons for every input.</span></li>
+          <li data-k="c">Sequential search<span class="why"><b>Correct.</b> It stops when the key is found, so the count depends on the input.</span></li>
+          <li data-k="d">Matrix multiplication<span class="why">Always \(n^3\) multiplications.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="m1-problems">
+    <h3><span class="num">1.9</span>Problems</h3>
+    <p>Thirteen problems. Open the hint only if you are stuck.</p>
+
+    <article class="prob" id="p1-a1">
+      <div class="ph"><span class="lvl a">A1</span><h4>Sum of squares of an array</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> SumSquares(A[0..n−1])
+    s ← 0
+    <b>for</b> i ← 0 <b>to</b> n − 1 <b>do</b>
+        s ← s + A[i] * A[i]
+    <b>return</b> s</pre>
+        <p>Name the input size and the basic operation, write the sum for its count and find the efficiency class.</p>
+      </div>
+      <details><summary>Hint</summary><div><p>There is one multiplication per iteration. How many values does \(i\) take?</p></div></details>
+      <details><summary>Answer</summary><div><p>\(M(n)=n\in\Theta(n)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\), the number of elements.</span></li>
+          <li><span class="k">Basic op.</span><span class="v">The multiplication \(A[i]\cdot A[i]\) (the addition runs equally often and gives the same answer).</span></li>
+          <li><span class="k">Cases</span><span class="v">No early exit: one case.</span></li>
+          <li><span class="k">Sum</span><span class="v">\(M(n)=\sum_{i=0}^{n-1}1\).</span></li>
+          <li><span class="k">Solution</span><span class="v">By S1, \(M(n)=(n-1)-0+1=n\). So \(M(n)=n\in\Theta(n)\).</span></li>
+        </ol>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-a2">
+      <div class="ph"><span class="lvl a">A2</span><h4>Two sums</h4></div>
+      <div class="pb"><p>Find closed formulas: (a) \(\displaystyle\sum_{i=3}^{n+1}1\) for \(n\ge2\); (b) \(\displaystyle\sum_{i=1}^{n}(2i+3)\).</p></div>
+      <details><summary>Hint</summary><div><p>(a) Use \(u-l+1\). (b) Split with R2, take 2 out with R1, then use S2 and S1.</p></div></details>
+      <details><summary>Answer</summary><div><p>(a) \(n-1\); (b) \(n^2+4n\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>(a) \(\sum_{i=3}^{n+1}1=(n+1)-3+1=n-1\). Check with \(n=3\): \(i=3,4\), two terms, and \(3-1=2\). ✓</p>
+        <p>(b) \(\sum_{i=1}^{n}(2i+3)=2\sum_{i=1}^{n}i+\sum_{i=1}^{n}3=2\cdot\frac{n(n+1)}2+3n=n^2+n+3n=n^2+4n\). Check with \(n=2\): \(5+7=12\) and \(4+8=12\). ✓</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-a3">
+      <div class="ph"><span class="lvl a">A3</span><h4>Counting descents</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> CountDescents(A[0..n−1])
+    <i>// Counts positions where an element is larger than the next one</i>
+    d ← 0
+    <b>for</b> i ← 0 <b>to</b> n − 2 <b>do</b>
+        <b>if</b> A[i] > A[i + 1]  d ← d + 1
+    <b>return</b> d</pre>
+        <p>How many key comparisons does the algorithm make? Does the answer depend on the order of elements?</p>
+      </div>
+      <details><summary>Hint</summary><div><p>The increment <code>d ← d + 1</code> depends on the data, the comparison does not.</p></div></details>
+      <details><summary>Answer</summary><div><p>\(C(n)=n-1\in\Theta(n)\) for every input.</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>Size \(n\); basic operation — the comparison \(A[i]>A[i+1]\). The loop has no exit, so the count is the same for all inputs. \(C(n)=\sum_{i=0}^{n-2}1=(n-2)-0+1=n-1\in\Theta(n)\). The number of increments of \(d\) varies from 0 (sorted array) to \(n-1\) (strictly decreasing array), which is why it is not chosen as the basic operation.</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-a4">
+      <div class="ph"><span class="lvl a">A4</span><h4>Order of growth of sums</h4></div>
+      <div class="pb"><p>(a) Find the efficiency class of \(\sum_{i=1}^{n} i^3\). (b) Find the exact value of \(\sum_{i=0}^{n-1}3^i\).</p></div>
+      <details><summary>Hint</summary><div><p>(a) Use S5 with \(k=3\). (b) It is a geometric series S4 with \(a=3\); be careful with the upper bound \(n-1\).</p></div></details>
+      <details><summary>Answer</summary><div><p>(a) \(\Theta(n^4)\); (b) \(\frac{3^n-1}{2}\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>(a) By S5, \(\sum_{i=1}^{n}i^k\in\Theta(n^{k+1})\); with \(k=3\) the sum is in \(\Theta(n^4)\) (in fact it equals \(\left(\frac{n(n+1)}2\right)^2\approx\frac{n^4}4\)).</p>
+        <p>(b) S4 with \(a=3\) and upper bound \(n-1\) instead of \(n\): \(\sum_{i=0}^{n-1}3^i=\frac{3^{(n-1)+1}-1}{3-1}=\frac{3^n-1}{2}\). Check \(n=3\): \(1+3+9=13=\frac{27-1}2\). ✓</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-b1">
+      <div class="ph"><span class="lvl b">B1</span><h4>Three loops with dependent bounds</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> Triple(n)
+    c ← 0
+    <b>for</b> i ← 1 <b>to</b> n <b>do</b>
+        <b>for</b> j ← 1 <b>to</b> i <b>do</b>
+            <b>for</b> k ← 1 <b>to</b> j <b>do</b>
+                c ← c + 1
+    <b>return</b> c</pre>
+        <p>Find the exact value returned by <code>Triple(n)</code> and its order of growth.</p>
+      </div>
+      <details><summary>Hint</summary><div><p>Compute from the inside out: the innermost sum is \(j\); then \(\sum_{j=1}^{i}j\) by S2; then split \(\frac{i(i+1)}2=\frac{i^2+i}{2}\) and use S3 and S2.</p></div></details>
+      <details><summary>Answer</summary><div><p>\(C(n)=\frac{n(n+1)(n+2)}{6}\in\Theta(n^3)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <div class="mathblock">\[ C(n)=\sum_{i=1}^{n}\sum_{j=1}^{i}\sum_{k=1}^{j}1=\sum_{i=1}^{n}\sum_{j=1}^{i}j=\sum_{i=1}^{n}\frac{i(i+1)}{2}=\frac12\Big(\sum_{i=1}^{n}i^2+\sum_{i=1}^{n}i\Big). \]</div>
+        <div class="mathblock">\[ =\frac12\Big(\frac{n(n+1)(2n+1)}{6}+\frac{n(n+1)}{2}\Big)=\frac{n(n+1)}{12}\big((2n+1)+3\big)=\frac{n(n+1)(2n+4)}{12}=\frac{n(n+1)(n+2)}{6}. \]</div>
+        <p>Check \(n=2\): triples \((i,j,k)\) are \((1,1,1),(2,1,1),(2,2,1),(2,2,2)\) — four; \(\frac{2\cdot3\cdot4}{6}=4\). ✓ Order: \(\approx\frac{n^3}6\in\Theta(n^3)\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-b2">
+      <div class="ph"><span class="lvl b">B2</span><h4>Inner loop that starts at the outer index</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>for</b> i ← 1 <b>to</b> n <b>do</b>
+    <b>for</b> j ← i <b>to</b> n <b>do</b>
+        <b>if</b> A[i] + A[j] = K  count ← count + 1</pre>
+        <p>How many comparisons \(A[i]+A[j]=K\) are made? (Here the array is indexed from 1.)</p>
+      </div>
+      <details><summary>Hint</summary><div><p>The inner loop runs from \(i\) to \(n\). How many terms is that? Then write the outer sum in reverse order.</p></div></details>
+      <details><summary>Answer</summary><div><p>\(C(n)=\frac{n(n+1)}2\in\Theta(n^2)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>Inner sum: \(\sum_{j=i}^{n}1=n-i+1\). Outer: \(C(n)=\sum_{i=1}^{n}(n-i+1)=n+(n-1)+\dots+1=\frac{n(n+1)}2\). Unlike UniqueElements, here \(j\) starts at \(i\), so pairs with \(i=j\) are also compared — that is why we get \(\frac{n(n+1)}2\) and not \(\frac{n(n-1)}2\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-b3">
+      <div class="ph"><span class="lvl b">B3</span><h4>Is the array sorted?</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> IsSorted(A[0..n−1])
+    <b>for</b> i ← 0 <b>to</b> n − 2 <b>do</b>
+        <b>if</b> A[i] > A[i + 1] <b>return</b> false
+    <b>return</b> true</pre>
+        <p>Find \(C_{worst}(n)\) and \(C_{best}(n)\) for the number of key comparisons, \(n\ge2\). Describe an input for each case.</p>
+      </div>
+      <details><summary>Hint</summary><div><p>When does the loop stop at the first iteration? When does it go to the end?</p></div></details>
+      <details><summary>Answer</summary><div><p>\(C_{worst}(n)=n-1\in\Theta(n)\); \(C_{best}(n)=1\in\Theta(1)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p><b>Worst case:</b> the loop never returns early. That happens when the array is sorted (the answer is <i>true</i>) or when the only "descent" is the last pair \(A[n-2]>A[n-1]\). Then \(C_{worst}(n)=\sum_{i=0}^{n-2}1=n-1\).</p>
+        <p><b>Best case:</b> \(A[0]>A[1]\), for example \([5,1,2,3]\). The first comparison returns false: \(C_{best}(n)=1\).</p>
+        <p>Note that the worst case for the count happens on the "good" input (a sorted array). The worst case is about work, not about the answer.</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-b4">
+      <div class="ph"><span class="lvl b">B4</span><h4>A nested sum with a variable body</h4></div>
+      <div class="pb"><p>Find a closed formula for \(\displaystyle S(n)=\sum_{i=0}^{n-1}\sum_{j=0}^{i}(i+j)\).</p></div>
+      <details><summary>Hint</summary><div><p>In the inner sum \(i\) is a constant. \(\sum_{j=0}^{i}i=i(i+1)\) (count the terms!) and \(\sum_{j=0}^{i}j=\frac{i(i+1)}{2}\).</p></div></details>
+      <details><summary>Answer</summary><div><p>\(S(n)=\frac{(n-1)n(n+1)}{2}\in\Theta(n^3)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>Inner sum: \(\sum_{j=0}^{i}(i+j)=i\cdot(i+1)+\frac{i(i+1)}{2}=\frac{3}{2}\,i(i+1)\).</p>
+        <div class="mathblock">\[ S(n)=\frac32\sum_{i=0}^{n-1}(i^2+i)=\frac32\Big(\frac{(n-1)n(2n-1)}{6}+\frac{(n-1)n}{2}\Big)=\frac32\cdot\frac{(n-1)n\,(2n-1+3)}{6}=\frac{(n-1)n(n+1)}{2}. \]</div>
+        <p>(We used S3 and S2 with \(n-1\) in place of \(n\).) Check \(n=2\): \(i=0\): \(0\); \(i=1\): \((1+0)+(1+1)=3\); total 3, and \(\frac{1\cdot2\cdot3}{2}=3\). ✓</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-c1">
+      <div class="ph"><span class="lvl c">C1</span><h4>Average case with a different probability</h4></div>
+      <div class="pb"><p>In a library database, a requested book is found in a list of \(n\) records in one request out of three. When the book is present, every position is equally likely. Sequential search is used. Find \(C_{avg}(n)\) and compute it for \(n=60\). Compare with the worst case.</p></div>
+      <details><summary>Hint</summary><div><p>Here \(p=\frac13\). Do not use "(best + worst)/2"; compute "count × probability" for every outcome.</p></div></details>
+      <details><summary>Answer</summary><div><p>\(C_{avg}(n)=\frac{5n+1}{6}\); for \(n=60\) it is \(\frac{301}{6}\approx50.2\), while \(C_{worst}(60)=60\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>Outcomes: the key is at position \(i\) with probability \(\frac{p}{n}=\frac1{3n}\) and costs \(i\) comparisons; the key is absent with probability \(\frac23\) and costs \(n\).</p>
+        <div class="mathblock">\[ C_{avg}(n)=\sum_{i=1}^{n}i\cdot\frac{1}{3n}+n\cdot\frac23=\frac{1}{3n}\cdot\frac{n(n+1)}{2}+\frac{2n}{3}=\frac{n+1}{6}+\frac{4n}{6}=\frac{5n+1}{6}. \]</div>
+        <p>For \(n=60\): \(\frac{301}{6}\approx50.2\). Because most searches fail, the average is close to the worst case \(n=60\): it is still \(\Theta(n)\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-c2">
+      <div class="ph"><span class="lvl c">C2</span><h4>Logarithmic loops</h4></div>
+      <div class="pb">
+        <p>(a) How many iterations does this loop make for \(n\ge1\)?</p>
+<pre class="pseudo">i ← n
+<b>while</b> i ≥ 1 <b>do</b>
+    i ← ⌊i / 3⌋</pre>
+        <p>(b) Find the count of the basic operation <code>c ← c + 1</code> and the efficiency class:</p>
+<pre class="pseudo"><b>for</b> i ← 1 <b>to</b> n <b>do</b>
+    j ← 1
+    <b>while</b> j ≤ n <b>do</b>
+        c ← c + 1
+        j ← 2 * j</pre>
+      </div>
+      <details><summary>Hint</summary><div><p>(a) Try \(n=1,2,3,8,9\) and find the pattern; \(\lfloor i/3\rfloor\) removes the last digit of \(i\) in base 3. (b) The inner loop does not depend on \(i\); it is Example 1.5.</p></div></details>
+      <details><summary>Answer</summary><div><p>(a) \(\lfloor\log_3 n\rfloor+1\) — the number of digits of \(n\) in base 3; (b) \(n\big(\lfloor\log_2 n\rfloor+1\big)\in\Theta(n\log n)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>(a) After \(t\) iterations, \(i=\lfloor n/3^t\rfloor\). The loop body runs while \(i\ge1\), i.e. while \(3^t\le n\), for \(t=0,1,\dots,\lfloor\log_3 n\rfloor\). By S1 that is \(\lfloor\log_3n\rfloor+1\) iterations. Check: \(n=8\): \(8\to2\to0\), two iterations; \(\lfloor\log_3 8\rfloor+1=1+1=2\). \(n=9\): \(9\to3\to1\to0\), three; \(2+1=3\). ✓</p>
+        <p>(b) For every \(i\) the inner loop makes \(\lfloor\log_2n\rfloor+1\) iterations (Example 1.5); it does not depend on \(i\). So \(C(n)=\sum_{i=1}^{n}(\lfloor\log_2n\rfloor+1)=n(\lfloor\log_2n\rfloor+1)\in\Theta(n\log n)\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-m1">
+      <div class="ph"><span class="lvl m">M1</span><h4>Find the mistake: a forgotten dependence</h4></div>
+      <div class="pb">
+        <p>A student analyses TriangleCount (Example 1.4, inner loop <code>for j ← 1 to i</code>) like this:</p>
+        <div class="note"><span class="lbl">Student's solution</span>"The outer loop makes \(n\) iterations, the inner loop makes at most \(n\) iterations. So \(C(n)=\sum_{i=1}^{n}\sum_{j=1}^{n}1=n^2\). Answer: \(C(n)=n^2\)."</div>
+        <p>Find the mistake, explain it and give the correct answer. Is the order of growth wrong too?</p>
+      </div>
+      <details><summary>Hint</summary><div><p>Compare the bounds of the inner sum with the bounds of the inner loop. Check the student's formula for \(n=2\) by hand.</p></div></details>
+      <details><summary>Answer</summary><div><p>The inner sum must go to \(i\), not \(n\). Correct: \(C(n)=\frac{n(n+1)}2\). The order \(\Theta(n^2)\) happens to be right, but the exact count is wrong; \(n^2\) is only an upper bound.</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>Mistake type: <b>off-by-one / dependent bound ignored</b>. "At most \(n\)" is an upper estimate, not the exact number of iterations. For \(n=2\) the loop runs \(1+2=3\) times, but the student's formula gives 4.</p>
+        <p>Correct sum: \(C(n)=\sum_{i=1}^{n}\sum_{j=1}^{i}1=\sum_{i=1}^{n}i=\frac{n(n+1)}{2}\). The student's result shows only \(C(n)\in O(n^2)\). For the \(\Theta\)-class one needs the lower bound too, which follows from the exact formula. With dependent bounds the error does not always keep the class: for a loop <code>for j ← 1 to i</code> nested in <code>i ← 1, 2, 4, …, n</code>, the true count is \(\Theta(n)\), not \(\Theta(n\log n)\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-m2">
+      <div class="ph"><span class="lvl m">M2</span><h4>Find the mistake: "a fast prime test"</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> IsPrime(N)
+    <i>// N ≥ 2</i>
+    <b>for</b> d ← 2 <b>to</b> N − 1 <b>do</b>
+        <b>if</b> N mod d = 0 <b>return</b> false
+    <b>return</b> true</pre>
+        <div class="note"><span class="lbl">Student's solution</span>"Input size is \(N\). Basic operation: <code>N mod d</code>. The loop makes \(N-2\) iterations, so \(C(N)=N-2\in\Theta(N)\). The algorithm is linear, hence efficient."</div>
+        <p>Find two mistakes in this analysis.</p>
+      </div>
+      <details><summary>Hint</summary><div><p>(1) How is the input written down? (2) Does the loop always reach \(N-1\)?</p></div></details>
+      <details><summary>Answer</summary><div><p>(1) Size vs. value: the size is \(b\approx\log_2N\) bits, so the worst case \(N-2\approx2^b\) is exponential in the size. (2) Cases are mixed: \(N-2\) is only the worst case (prime \(N\)); the best case is 1 (even \(N\)).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p><b>Mistake 1 — size vs. value.</b> A number \(N\) is written with \(b=\lfloor\log_2N\rfloor+1\) bits. The worst-case count \(N-2\) lies between \(2^{b-1}-2\) and \(2^b\), so \(C_{worst}(b)\in\Theta(2^b)\): exponential. A 64-bit prime would need about \(10^{19}\) divisions.</p>
+        <p><b>Mistake 2 — cases mixed up.</b> The loop exits early when a divisor is found. \(C_{worst}=N-2\) when \(N\) is prime; \(C_{best}=1\) when \(N\) is even. The student's formula is the worst case but is not called that.</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p1-e1">
+      <div class="ph"><span class="lvl e">E1</span><h4>Empirical check of Problem B1</h4></div>
+      <div class="pb">
+        <p>Write a Python function <code>triple(n)</code> that implements the algorithm from Problem B1 with an operation counter. For \(n=1,2,3,5,10,20,50\) print the counter, the value \(\frac{n(n+1)(n+2)}6\) and the ratio \(\text{count}/n^3\). What number does the ratio approach? Explain why.</p>
+      </div>
+      <details><summary>Hint</summary><div><p>Three nested <code>range</code> loops: <code>range(1, n+1)</code>, <code>range(1, i+1)</code>, <code>range(1, j+1)</code>. Use integer division <code>//</code> in the formula.</p></div></details>
+      <details><summary>Answer</summary><div><p>Counter and formula are equal for every \(n\) (e.g. \(n=10\): 220; \(n=50\): 22100). The ratio approaches \(\frac16\approx0.1667\) because \(\frac{n(n+1)(n+2)}{6}\approx\frac{n^3}{6}\).</p></div></details>
+      <details><summary>Solution</summary><div>
+<pre class="py"><span class="k">def</span> triple(n):
+    count = 0
+    <span class="k">for</span> i <span class="k">in</span> range(1, n + 1):
+        <span class="k">for</span> j <span class="k">in</span> range(1, i + 1):
+            <span class="k">for</span> k <span class="k">in</span> range(1, j + 1):
+                count += 1                       <span class="c"># basic operation</span>
+    <span class="k">return</span> count
+
+print(f"{'n':>4} {'count':>8} {'formula':>8} {'count/n^3':>10}")
+<span class="k">for</span> n <span class="k">in</span> [1, 2, 3, 5, 10, 20, 50]:
+    c = triple(n)
+    f = n * (n + 1) * (n + 2) // 6
+    <span class="k">assert</span> c == f
+    print(f"{n:>4} {c:>8} {f:>8} {c / n**3:>10.4f}")</pre>
+<div class="tscroll"><table class="t"><thead><tr><th>n</th><th>count</th><th>formula</th><th>count / n³</th></tr></thead><tbody>
+<tr><td class="n">1</td><td class="n">1</td><td class="n">1</td><td class="n">1.0000</td></tr>
+<tr><td class="n">2</td><td class="n">4</td><td class="n">4</td><td class="n">0.5000</td></tr>
+<tr><td class="n">3</td><td class="n">10</td><td class="n">10</td><td class="n">0.3704</td></tr>
+<tr><td class="n">5</td><td class="n">35</td><td class="n">35</td><td class="n">0.2800</td></tr>
+<tr><td class="n">10</td><td class="n">220</td><td class="n">220</td><td class="n">0.2200</td></tr>
+<tr><td class="n">20</td><td class="n">1540</td><td class="n">1540</td><td class="n">0.1925</td></tr>
+<tr><td class="n">50</td><td class="n">22100</td><td class="n">22100</td><td class="n">0.1768</td></tr>
+</tbody></table></div>
+        <p><b>Conclusion.</b> The counter matches the formula exactly, so the derivation in B1 is correct. The ratio decreases towards \(\frac16\): \(\frac{n(n+1)(n+2)}{6n^3}=\frac16(1+\frac1n)(1+\frac2n)\to\frac16\), which confirms \(C(n)\in\Theta(n^3)\) with leading constant \(\frac16\).</p>
+      </div></details>
+    </article>
+  </section>
+
+  <section class="sec wide" id="m1-summary">
+    <h3><span class="num">1.10</span>Summary and cheat sheet</h3>
+    <div style="max-width:var(--measure)">
+      <ul>
+        <li>Analysis of a loop algorithm = choose \(n\) → choose the basic operation → check cases → write a sum → solve it.</li>
+        <li>One loop = one \(\Sigma\) with the same bounds. Inner loops whose bounds depend on the outer index give nested sums like \(\sum_i\sum_{j\le i}\).</li>
+        <li>A loop that multiplies its counter makes \(\Theta(\log n)\) iterations.</li>
+        <li>When the algorithm can exit early, analyse worst, best and average cases separately; the average needs probability assumptions.</li>
+        <li>Check every formula on small \(n\) by hand and on large \(n\) with an operation counter.</li>
+      </ul>
+    </div>
+    <div class="cheat">
+      <div><span class="lbl">Number of terms</span>\[\sum_{i=l}^{u}1=u-l+1\]</div>
+      <div><span class="lbl">Arithmetic</span>\[\sum_{i=1}^{n}i=\frac{n(n+1)}{2}\]</div>
+      <div><span class="lbl">Squares</span>\[\sum_{i=1}^{n}i^2=\frac{n(n+1)(2n+1)}{6}\]</div>
+      <div><span class="lbl">Geometric</span>\[\sum_{i=0}^{n}a^i=\frac{a^{n+1}-1}{a-1}\]</div>
+      <div><span class="lbl">Powers</span>\[\sum_{i=1}^{n}i^k\in\Theta(n^{k+1})\]</div>
+      <div><span class="lbl">Doubling loop</span>\[\lfloor\log_2 n\rfloor+1\ \text{iterations}\]</div>
+      <div><span class="lbl">Sequential search, average</span>\[C_{avg}=\frac{p(n+1)}{2}+n(1-p)\]</div>
+      <div><span class="lbl">Rules</span>\[\sum c\,a_i=c\sum a_i,\ \ \sum(a_i\pm b_i)=\sum a_i\pm\sum b_i\]</div>
+    </div>
+  </section>
+  <div class="pagenav"><a href="#intro">← Before you start</a><a href="#m2">Module 2: Recursive algorithms →</a></div>
+</div>
+
+<!-- ============================== MODULE 2 ============================== -->
+<div class="chapter" id="m2">
+  <header><div class="kicker">Module 2 · Lecture 5 · Levitin §2.4–2.5</div><h2>Analysis of recursive algorithms</h2></header>
+
+  <div class="goals">
+    <h3>Goals and learning outcomes</h3>
+    <p><b>Goal:</b> learn to describe the work of a recursive algorithm by a recurrence relation and to solve it.</p>
+    <p class="small muted">After this module you will be able to:</p>
+    <ul>
+      <li>apply the five-step plan for recursive algorithms;</li>
+      <li>write a recurrence relation and its initial condition from pseudocode;</li>
+      <li>solve recurrences by backward substitutions and prove the answer by induction;</li>
+      <li>draw a recursion tree and count its nodes level by level;</li>
+      <li>explain why naive recursive Fibonacci is exponential and fix it with memoization or iteration;</li>
+      <li>estimate the memory used by the recursion stack.</li>
+    </ul>
+  </div>
+
+  <section class="sec" id="m2-plan">
+    <h3><span class="num">2.1</span>The general plan of analysis</h3>
+    <p>For a recursive algorithm we cannot write a sum directly: we do not see a loop. Instead we write an equation that says how the work for size \(n\) depends on the work for a smaller size.</p>
+    <ol class="plan">
+      <li><b>Choose the input size \(n\).</b></li>
+      <li><b>Identify the basic operation.</b></li>
+      <li><b>Check the cases.</b> If the number of executions can differ for inputs of the same size, analyse each case separately.</li>
+      <li><b>Write a recurrence relation with an initial condition.</b> \(M(n)\) = (work in the recursive calls) + (work done in this call). The <dfn>initial condition</dfn> gives the count for the smallest input, where the recursion stops.</li>
+      <li><b>Solve the recurrence</b>, or at least find the order of growth of its solution.</li>
+    </ol>
+    <p>A <dfn>recurrence relation</dfn> is an equation that defines \(x(n)\) through the values of \(x\) at smaller arguments, e.g. \(x(n)=x(n-1)+1\). By itself it has infinitely many solutions; the initial condition, e.g. \(x(0)=0\), picks one of them.</p>
+    <div class="note"><span class="lbl">Reading a recurrence from code</span>Look at the line with the recursive call. <code>F(n − 1) * n</code> → one recursive call on \(n-1\) plus one multiplication: \(M(n)=M(n-1)+1\). Two calls on \(n-1\) plus one move → \(M(n)=2M(n-1)+1\). One call on \(\lfloor n/2\rfloor\) plus one addition → \(A(n)=A(\lfloor n/2\rfloor)+1\).</div>
+  </section>
+
+  <section class="sec" id="m2-backward">
+    <h3><span class="num">2.2</span>The method of backward substitutions</h3>
+    <p>The idea: replace \(x(n-1)\) by its own formula, then \(x(n-2)\), and so on, until a pattern appears; then jump to the initial condition.</p>
+    <ol class="plan">
+      <li><b>Substitute</b> the recurrence into itself two or three times.</li>
+      <li><b>Find the general pattern</b> after \(i\) substitutions.</li>
+      <li><b>Choose \(i\)</b> so that the argument reaches the initial condition (e.g. \(n-i=0\), so \(i=n\)).</li>
+      <li><b>Simplify</b> to a closed formula; often a sum from Module 1 appears here.</li>
+      <li><b>Check</b> on small \(n\), and for full certainty prove the formula by induction.</li>
+    </ol>
+    <h4>Example: \(x(n)=x(n-1)+n\), \(x(0)=0\)</h4>
+    <div class="mathblock">\[ x(n)=x(n-1)+n=\big[x(n-2)+(n-1)\big]+n=\big[x(n-3)+(n-2)\big]+(n-1)+n=\dots \]</div>
+    <div class="mathblock">\[ x(n)=x(n-i)+(n-i+1)+\dots+(n-1)+n. \]</div>
+    <p>Put \(i=n\): \(x(n)=x(0)+1+2+\dots+n=\frac{n(n+1)}{2}\).</p>
+    <h4>Verifying by induction</h4>
+    <p>A pattern "seen" after three substitutions is a guess. Mathematical induction turns it into a proof.</p>
+    <ul>
+      <li><b>Base:</b> \(n=0\): formula gives \(\frac{0\cdot1}{2}=0=x(0)\). ✓</li>
+      <li><b>Step:</b> assume \(x(n-1)=\frac{(n-1)n}{2}\). Then \(x(n)=x(n-1)+n=\frac{(n-1)n}{2}+n=\frac{n(n-1+2)}{2}=\frac{n(n+1)}{2}\). ✓</li>
+    </ul>
+  </section>
+
+  <section class="sec" id="m2-examples">
+    <h3><span class="num">2.3</span>Worked examples</h3>
+
+    <div class="example" id="ex-fact">
+      <div class="ex-head"><span class="tag">Example 2.1</span><h4>Factorial</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> F(n)
+    <i>// Computes n! recursively; n ≥ 0</i>
+    <b>if</b> n = 0 <b>return</b> 1
+    <b>else return</b> F(n − 1) * n</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\). (Strictly, the size of a number is its bit length, but for factorial it is customary to use \(n\); the count is small either way.)</span></li>
+          <li><span class="k">Basic op.</span><span class="v">Multiplication.</span></li>
+          <li><span class="k">Cases</span><span class="v">One case.</span></li>
+          <li><span class="k">Recurrence</span><span class="v">To compute \(F(n)\): compute \(F(n-1)\) — that is \(M(n-1)\) multiplications — and then one more: \(M(n)=M(n-1)+1\) for \(n>0\). For \(n=0\) no multiplications: \(M(0)=0\).</span></li>
+          <li><span class="k">Solution</span><span class="v">
+            <div class="mathblock">\[ M(n)=M(n-1)+1=M(n-2)+2=M(n-3)+3=\dots=M(n-i)+i=\dots=M(0)+n=n. \]</div>
+            <span class="result">\(M(n)=n\in\Theta(n)\).</span> The same as the loop <code>for i ← 1 to n do p ← p * i</code>; recursion does not make it slower in operations, but it uses memory for the stack (§2.6).</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="example" id="ex-hanoi">
+      <div class="ex-head"><span class="tag">Example 2.2</span><h4>Tower of Hanoi</h4></div>
+      <div class="ex-body">
+        <p>\(n\) disks of different sizes are on peg 1, largest at the bottom. Move them to peg 3 using peg 2, one disk at a time, never putting a larger disk on a smaller one.</p>
+<pre class="pseudo"><b>ALGORITHM</b> Hanoi(n, from, to, via)
+    <b>if</b> n = 1  move disk 1 from <i>from</i> to <i>to</i>
+    <b>else</b>
+        Hanoi(n − 1, from, via, to)     <i>// clear the way</i>
+        move disk n from <i>from</i> to <i>to</i>
+        Hanoi(n − 1, via, to, from)     <i>// put the n−1 disks back on top</i></pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">The number of disks \(n\).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">Moving one disk.</span></li>
+          <li><span class="k">Cases</span><span class="v">One case.</span></li>
+          <li><span class="k">Recurrence</span><span class="v">\(M(n)=M(n-1)+1+M(n-1)=2M(n-1)+1\) for \(n>1\); \(M(1)=1\).</span></li>
+          <li><span class="k">Solution</span><span class="v">
+            <div class="mathblock">\[ \begin{aligned}M(n)&=2M(n-1)+1=2[2M(n-2)+1]+1=2^2M(n-2)+2+1\\&=2^3M(n-3)+2^2+2+1=\dots=2^iM(n-i)+2^{i-1}+\dots+2+1\\&=2^iM(n-i)+2^i-1.\end{aligned} \]</div>
+            <p>Initial condition at \(n-i=1\), so \(i=n-1\): \(M(n)=2^{n-1}\cdot1+2^{n-1}-1=2^n-1\).</p>
+            <span class="result">\(M(n)=2^n-1\in\Theta(2^n)\).</span></span></li>
+        </ol>
+        <figure>
+          <div class="svg-scroll"><svg id="hanoiTree" viewBox="0 0 640 270" role="img" aria-label="Recursion tree for Hanoi with n = 4: one node of size 4, two of size 3, four of size 2, eight of size 1"></svg></div>
+          <figcaption><b>Figure 2.1.</b> Recursion tree of Hanoi(4). Each node is one call; the number inside is the number of disks. Every call makes exactly one move, so the number of moves is the number of nodes: \(1+2+4+8=\sum_{l=0}^{n-1}2^l=2^n-1=15\).</figcaption>
+        </figure>
+        <p>The tree gives a second way to solve the recurrence: level \(l\) has \(2^l\) nodes, there are \(n\) levels, and the geometric series S4 gives \(2^n-1\). Even this optimal algorithm is exponential: for 64 disks at one move per second it would take about 585 billion years.</p>
+      </div>
+    </div>
+
+    <div class="example" id="ex-binrec">
+      <div class="ex-head"><span class="tag">Example 2.3</span><h4>Number of binary digits</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> BinRec(n)
+    <i>// Returns the number of binary digits in the binary representation of n ≥ 1</i>
+    <b>if</b> n = 1 <b>return</b> 1
+    <b>else return</b> BinRec(⌊n/2⌋) + 1</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\) (we will see that the count is about the bit length of \(n\)).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">The addition <code>+ 1</code>.</span></li>
+          <li><span class="k">Cases</span><span class="v">One case.</span></li>
+          <li><span class="k">Recurrence</span><span class="v">\(A(n)=A(\lfloor n/2\rfloor)+1\) for \(n>1\); \(A(1)=0\) — for \(n=1\) no addition is made.</span></li>
+          <li><span class="k">Solution</span><span class="v">
+            <p>The floor makes substitution awkward, so we first solve for \(n=2^k\), where \(\lfloor n/2\rfloor=2^{k-1}\) exactly:</p>
+            <div class="mathblock">\[ A(2^k)=A(2^{k-1})+1=A(2^{k-2})+2=\dots=A(2^{k-i})+i=\dots=A(2^0)+k=k. \]</div>
+            <p>Since \(k=\log_2 n\): \(A(n)=\log_2 n\) for \(n=2^k\). The <dfn>smoothness rule</dfn> extends the order to all \(n\): \(A(n)\in\Theta(\log n)\). (The exact answer for every \(n\) is \(\lfloor\log_2 n\rfloor\).)</p>
+            <span class="result">\(A(n)=\lfloor\log_2 n\rfloor\in\Theta(\log n)\).</span></span></li>
+        </ol>
+        <p class="small muted">Smoothness rule (Levitin, Appendix B): if \(f(n)\) is eventually nondecreasing, \(f(2n)\in\Theta(f(n))\) for the comparison function (true for \(\log n\), \(n\), \(n\log n\), \(n^k\), but not \(2^n\)), and \(f(n)\in\Theta(g(n))\) for \(n=2^k\), then \(f(n)\in\Theta(g(n))\) for all \(n\).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="m2-original">
+    <h3><span class="num">2.4</span>Two new examples</h3>
+
+    <div class="example" id="ex-recmax">
+      <div class="ex-head"><span class="tag orig">Example 2.4 · new</span><h4>Recursive maximum search</h4></div>
+      <div class="ex-body">
+<pre class="pseudo"><b>ALGORITHM</b> RecMax(A[0..n−1], n)
+    <i>// Returns the largest of the first n elements; n ≥ 1</i>
+    <b>if</b> n = 1 <b>return</b> A[0]
+    m ← RecMax(A, n − 1)
+    <b>if</b> A[n − 1] > m <b>return</b> A[n − 1]  <b>else return</b> m</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">\(n\).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">The comparison \(A[n-1]>m\).</span></li>
+          <li><span class="k">Cases</span><span class="v">One case: every call with \(n>1\) makes exactly one comparison.</span></li>
+          <li><span class="k">Recurrence</span><span class="v">\(C(n)=C(n-1)+1\) for \(n>1\); \(C(1)=0\).</span></li>
+          <li><span class="k">Solution</span><span class="v">\(C(n)=C(n-1)+1=C(n-2)+2=\dots=C(n-i)+i\). Reach \(C(1)\) with \(i=n-1\): \(C(n)=C(1)+n-1=n-1\). <span class="result">\(C(n)=n-1\in\Theta(n)\)</span> — exactly as MaxElement (Example 1.1). Recursion did not change the number of comparisons, but it uses a stack of depth \(n\).</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="example" id="ex-fastpow">
+      <div class="ex-head"><span class="tag orig">Example 2.5 · new</span><h4>Fast exponentiation by squaring</h4></div>
+      <div class="ex-body">
+        <p>Computing \(x^n\) by \(n-1\) multiplications is slow. If \(n\) is even, \(x^n=\big(x^{n/2}\big)^2\), so one recursive call on \(n/2\) and one multiplication are enough. Here we take \(n=2^k\).</p>
+<pre class="pseudo"><b>ALGORITHM</b> Power(x, n)
+    <i>// Computes x^n for n = 2^k, k ≥ 0</i>
+    <b>if</b> n = 1 <b>return</b> x
+    h ← Power(x, n/2)
+    <b>return</b> h * h</pre>
+        <ol class="steps">
+          <li><span class="k">Input size</span><span class="v">The exponent \(n\).</span></li>
+          <li><span class="k">Basic op.</span><span class="v">Multiplication <code>h * h</code>.</span></li>
+          <li><span class="k">Cases</span><span class="v">One case.</span></li>
+          <li><span class="k">Recurrence</span><span class="v">\(M(n)=M(n/2)+1\) for \(n>1\); \(M(1)=0\). Note: <code>h</code> is computed once and used twice. Writing <code>Power(x, n/2) * Power(x, n/2)</code> would give \(M(n)=2M(n/2)+1\) and \(n-1\) multiplications — no gain at all.</span></li>
+          <li><span class="k">Solution</span><span class="v">With \(n=2^k\): \(M(2^k)=M(2^{k-1})+1=\dots=M(2^0)+k=k\). <span class="result">\(M(n)=\log_2 n\in\Theta(\log n)\)</span>. For \(n=1024\): 10 multiplications instead of 1023. (Problem C2 extends this to every \(n\).)</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="m2-fib">
+    <h3><span class="num">2.5</span>Warning example: naive Fibonacci</h3>
+    <p>The Fibonacci numbers are \(F(0)=0\), \(F(1)=1\), \(F(n)=F(n-1)+F(n-2)\): 0, 1, 1, 2, 3, 5, 8, 13, … The definition translates straight into code:</p>
+<pre class="pseudo"><b>ALGORITHM</b> FibRec(n)
+    <b>if</b> n ≤ 1 <b>return</b> n
+    <b>else return</b> FibRec(n − 1) + FibRec(n − 2)</pre>
+    <p>Basic operation: addition. Recurrence: \(A(n)=A(n-1)+A(n-2)+1\) for \(n>1\), \(A(0)=A(1)=0\).</p>
+    <p>Backward substitution does not simplify this (two different smaller arguments). A trick: add 1 to both sides. With \(B(n)=A(n)+1\) we get \(B(n)=B(n-1)+B(n-2)\), \(B(0)=B(1)=1\). That is the Fibonacci recurrence shifted by one: \(B(n)=F(n+1)\). So</p>
+    <div class="mathblock">\[ A(n)=F(n+1)-1\in\Theta(\varphi^n),\qquad \varphi=\frac{1+\sqrt5}{2}\approx1.618, \]</div>
+    <p>because \(F(n)=\frac{1}{\sqrt5}\big(\varphi^n-\hat\varphi^{\,n}\big)\) with \(|\hat\varphi|\lt1\). The algorithm is <b>exponential</b>: FibRec(40) makes 165 580 140 additions to get a number that needs only 39.</p>
+    <figure>
+      <div class="svg-scroll"><svg id="fibTree" viewBox="0 0 680 280" role="img" aria-label="Recursion tree of FibRec(5); calls on the same argument appear many times"></svg></div>
+      <figcaption><b>Figure 2.2.</b> Recursion tree of FibRec(5). Calls with the same argument have the same colour: FibRec(3) is computed 2 times, FibRec(2) 3 times, FibRec(1) 5 times. These <b>repeated subproblems</b> are the cause of the exponential growth.</figcaption>
+    </figure>
+    <h4>Fix 1: memoization</h4>
+    <p>Store each computed value in a table and look it up before recomputing:</p>
+<pre class="pseudo"><b>ALGORITHM</b> FibMemo(n)
+    <i>// memo[0] ← 0, memo[1] ← 1, other entries are empty</i>
+    <b>if</b> memo[n] is empty
+        memo[n] ← FibMemo(n − 1) + FibMemo(n − 2)
+    <b>return</b> memo[n]</pre>
+    <p>Each value \(F(2),\dots,F(n)\) is computed once with one addition: \(n-1\in\Theta(n)\) additions. Memory: the table and a stack of depth \(\Theta(n)\).</p>
+    <h4>Fix 2: iteration</h4>
+<pre class="pseudo"><b>ALGORITHM</b> FibIter(n)
+    a ← 0;  b ← 1
+    <b>for</b> i ← 2 <b>to</b> n <b>do</b>
+        c ← a + b;  a ← b;  b ← c
+    <b>return</b> b       <i>// for n ≥ 1</i></pre>
+    <p>\(\sum_{i=2}^{n}1=n-1\) additions and only three variables: \(\Theta(n)\) time and \(\Theta(1)\) memory.</p>
+    <figure>
+      <div class="svg-scroll"><svg id="fibChart" viewBox="0 0 640 300" role="img" aria-label="Additions of naive and memoized Fibonacci for n from 2 to 30, logarithmic scale"></svg></div>
+      <figcaption><b>Figure 2.3.</b> Number of additions for \(n=2,\dots,30\) on a logarithmic scale: naive recursion \(F(n+1)-1\) (a straight rising line means exponential growth) vs. memoization and iteration \(n-1\).</figcaption>
+    </figure>
+  </section>
+
+  <section class="sec" id="m2-stack">
+    <h3><span class="num">2.6</span>Recursion vs. iteration</h3>
+    <p>Each recursive call that has not finished keeps a <dfn>stack frame</dfn>: its parameters, local variables and return address. So recursion costs <b>memory</b> proportional to the <dfn>recursion depth</dfn> — the longest chain of calls that are open at the same time.</p>
+    <div class="tscroll"><table class="t">
+      <thead><tr><th>Algorithm</th><th>Time (basic ops)</th><th>Recursion depth = extra memory</th></tr></thead>
+      <tbody>
+        <tr><td>F(n) factorial</td><td>\(n\)</td><td>\(n+1\) frames, \(\Theta(n)\)</td></tr>
+        <tr><td>RecMax</td><td>\(n-1\)</td><td>\(n\) frames, \(\Theta(n)\)</td></tr>
+        <tr><td>Hanoi</td><td>\(2^n-1\)</td><td>\(n\) frames, \(\Theta(n)\)</td></tr>
+        <tr><td>BinRec, Power</td><td>\(\Theta(\log n)\)</td><td>\(\Theta(\log n)\)</td></tr>
+        <tr><td>FibRec</td><td>\(F(n+1)-1\)</td><td>\(n\) frames, \(\Theta(n)\) — time is exponential, memory is not</td></tr>
+        <tr><td>Any loop version</td><td>same</td><td>\(\Theta(1)\)</td></tr>
+      </tbody>
+    </table></div>
+    <p>Note that depth is not the number of calls: Hanoi makes \(2^n-1\) calls, but at most \(n\) are open at once.</p>
+    <p>In Python the default recursion limit is about 1000 frames, so <code>factorial(5000)</code> written recursively fails with <code>RecursionError</code>, while the loop version works.</p>
+    <h4>Tail recursion</h4>
+    <p>A call is a <dfn>tail call</dfn> if it is the very last action of the function — its result is returned without further work. <code>return F(n − 1) * n</code> is <i>not</i> a tail call (the multiplication happens after it). With an accumulator it becomes one:</p>
+<pre class="pseudo"><b>ALGORITHM</b> FactTail(n, acc)
+    <i>// call as FactTail(n, 1)</i>
+    <b>if</b> n = 0 <b>return</b> acc
+    <b>return</b> FactTail(n − 1, acc * n)</pre>
+    <p>A tail-recursive function can be turned into a loop mechanically: the parameters become variables that are updated on each pass. Some compilers (Scheme, often C with optimisation) do this automatically and the stack depth becomes \(\Theta(1)\). Python and Java do <b>not</b>, so there the loop must be written by hand.</p>
+  </section>
+
+  <section class="sec" id="m2-quiz">
+    <h3><span class="num">2.7</span>Quiz</h3>
+    <div class="quiz" data-quiz="m2" data-title="Module 2 quiz">
+      <div class="qitem" data-answer="a">
+        <p>Which recurrence counts the multiplications of the recursive factorial F(n)?</p>
+        <ol class="opts">
+          <li data-k="a">\(M(n)=M(n-1)+1,\ M(0)=0\)<span class="why"><b>Correct.</b> One recursive call on \(n-1\) plus one multiplication; at \(n=0\) nothing is multiplied.</span></li>
+          <li data-k="b">\(M(n)=n\cdot M(n-1),\ M(0)=1\)<span class="why">This is the definition of \(n!\) itself, not of the number of multiplications.</span></li>
+          <li data-k="c">\(M(n)=M(n-1)+n,\ M(0)=0\)<span class="why">Each call makes one multiplication, not \(n\).</span></li>
+          <li data-k="d">\(M(n)=2M(n-1)+1,\ M(1)=1\)<span class="why">That is Hanoi: two recursive calls.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="c">
+        <p>Why does a recurrence relation need an initial condition?</p>
+        <ol class="opts">
+          <li data-k="a">To make the algorithm stop<span class="why">The base case in the code makes it stop; the initial condition describes its cost.</span></li>
+          <li data-k="b">To determine the order of growth<span class="why">The order can sometimes be found without it; but the exact solution cannot.</span></li>
+          <li data-k="c">Without it the recurrence has infinitely many solutions<span class="why"><b>Correct.</b> \(x(n)=x(n-1)+1\) is satisfied by \(n\), \(n+5\), \(n-3\)… The initial condition picks one.</span></li>
+          <li data-k="d">It is needed only for recurrences with two terms<span class="why">Every recurrence needs one (or more) initial conditions.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="b">
+        <p>Solve \(x(n)=x(n-1)+5\), \(x(1)=0\).</p>
+        <ol class="opts">
+          <li data-k="a">\(5n\)<span class="why">This is the solution for \(x(0)=0\). Here the start is \(x(1)=0\).</span></li>
+          <li data-k="b">\(5(n-1)\)<span class="why"><b>Correct.</b> \(x(n)=x(n-i)+5i\); with \(i=n-1\): \(x(1)+5(n-1)\).</span></li>
+          <li data-k="c">\(5^n\)<span class="why">5 is added, not multiplied, at each step.</span></li>
+          <li data-k="d">\(n+5\)<span class="why">5 is added \(n-1\) times, not once.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="d">
+        <p>How many moves does Hanoi make for 10 disks?</p>
+        <ol class="opts">
+          <li data-k="a">100<span class="why">The growth is exponential, not quadratic.</span></li>
+          <li data-k="b">512<span class="why">\(2^{9}\) is the number of nodes on the last level only.</span></li>
+          <li data-k="c">1024<span class="why">That is \(2^{10}\); the formula is \(2^n-1\).</span></li>
+          <li data-k="d">1023<span class="why"><b>Correct.</b> \(M(10)=2^{10}-1\).</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="a">
+        <p>After \(i\) backward substitutions in \(x(n)=2x(n-1)+1\) we get…</p>
+        <ol class="opts">
+          <li data-k="a">\(2^ix(n-i)+2^i-1\)<span class="why"><b>Correct.</b> The added terms \(1+2+\dots+2^{i-1}\) sum to \(2^i-1\) by S4.</span></li>
+          <li data-k="b">\(2^ix(n-i)+i\)<span class="why">Each added 1 is multiplied by 2 at the next substitution, so the terms are \(1,2,4,\dots\), not \(1,1,1,\dots\)</span></li>
+          <li data-k="c">\(2ix(n-i)+1\)<span class="why">The coefficient doubles at every step: \(2\cdot2\cdot\ldots=2^i\), not \(2i\).</span></li>
+          <li data-k="d">\(x(n-i)+2^i\)<span class="why">The factor in front of \(x\) has been lost.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="c">
+        <p>How many additions does BinRec(n) make for \(n=2^k\)?</p>
+        <ol class="opts">
+          <li data-k="a">\(n\)<span class="why">The argument is halved, not decreased by 1.</span></li>
+          <li data-k="b">\(k+1\)<span class="why">\(k+1\) is the value returned (the number of bits), not the number of additions; \(A(1)=0\).</span></li>
+          <li data-k="c">\(k=\log_2 n\)<span class="why"><b>Correct.</b> \(A(2^k)=A(2^{k-1})+1=\dots=A(1)+k=k\).</span></li>
+          <li data-k="d">\(n/2\)<span class="why">Only one call is made per level, with half the argument.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="b">
+        <p>What is the efficiency class of naive recursive FibRec(n)?</p>
+        <ol class="opts">
+          <li data-k="a">\(\Theta(n)\)<span class="why">That is the class of the memoized and iterative versions.</span></li>
+          <li data-k="b">\(\Theta(\varphi^n)\), exponential<span class="why"><b>Correct.</b> \(A(n)=F(n+1)-1\) and \(F(n)\) grows like \(\varphi^n/\sqrt5\).</span></li>
+          <li data-k="c">\(\Theta(n^2)\)<span class="why">The number of calls grows much faster than any polynomial.</span></li>
+          <li data-k="d">\(\Theta(2^n)\) exactly<span class="why">\(2^n\) is an upper bound (\(O(2^n)\)), but \(\varphi\approx1.618\lt2\), so it is not \(\Theta(2^n)\).</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="d">
+        <p>Why is memoized Fibonacci fast?</p>
+        <ol class="opts">
+          <li data-k="a">It uses multiplication instead of addition<span class="why">It still uses addition.</span></li>
+          <li data-k="b">It makes only one recursive call<span class="why">It still has two recursive calls in the code; most of them return at once from the table.</span></li>
+          <li data-k="c">Python caches function calls automatically<span class="why">Python does not do this unless you ask (e.g. with <code>functools.lru_cache</code>).</span></li>
+          <li data-k="d">Each subproblem is solved only once<span class="why"><b>Correct.</b> Repeated subproblems are looked up, so there are \(n-1\) additions.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="a">
+        <p>What is the maximum recursion depth of Hanoi(n)?</p>
+        <ol class="opts">
+          <li data-k="a">\(n\)<span class="why"><b>Correct.</b> A chain of open calls goes \(n, n-1, \dots, 1\).</span></li>
+          <li data-k="b">\(2^n-1\)<span class="why">That is the total number of calls, but they are not all open at once.</span></li>
+          <li data-k="c">\(\log_2 n\)<span class="why">The argument decreases by 1, not by half.</span></li>
+          <li data-k="d">\(1\)<span class="why">Only a loop or optimised tail recursion has constant depth.</span></li>
+        </ol>
+      </div>
+      <div class="qitem" data-answer="c">
+        <p>Which call is a tail call?</p>
+        <ol class="opts">
+          <li data-k="a"><code>return F(n − 1) * n</code><span class="why">The multiplication is done after the call returns.</span></li>
+          <li data-k="b"><code>return 1 + BinRec(⌊n/2⌋)</code><span class="why">The addition is done after the call returns.</span></li>
+          <li data-k="c"><code>return FactTail(n − 1, acc * n)</code><span class="why"><b>Correct.</b> All work is done before the call; its result is returned as is.</span></li>
+          <li data-k="d"><code>return Fib(n − 1) + Fib(n − 2)</code><span class="why">Two calls and an addition after them.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="m2-problems">
+    <h3><span class="num">2.8</span>Problems</h3>
+
+    <article class="prob" id="p2-a1">
+      <div class="ph"><span class="lvl a">A1</span><h4>A constant step</h4></div>
+      <div class="pb"><p>Solve by backward substitutions: \(x(n)=x(n-1)+3\) for \(n>0\), \(x(0)=0\).</p></div>
+      <details><summary>Hint</summary><div><p>After \(i\) substitutions: \(x(n-i)+3i\).</p></div></details>
+      <details><summary>Answer</summary><div><p>\(x(n)=3n\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>\(x(n)=x(n-1)+3=x(n-2)+6=x(n-3)+9=\dots=x(n-i)+3i\). Take \(i=n\): \(x(n)=x(0)+3n=3n\). Check: \(x(2)=x(1)+3=(x(0)+3)+3=6=3\cdot2\). ✓</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-a2">
+      <div class="ph"><span class="lvl a">A2</span><h4>Recursive array sum</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> RecSum(A[0..n−1], n)
+    <i>// n ≥ 1</i>
+    <b>if</b> n = 1 <b>return</b> A[0]
+    <b>return</b> RecSum(A, n − 1) + A[n − 1]</pre>
+        <p>Set up a recurrence and an initial condition for the number of additions and solve it.</p>
+      </div>
+      <details><summary>Hint</summary><div><p>How many additions are made when \(n=1\)?</p></div></details>
+      <details><summary>Answer</summary><div><p>\(A(n)=A(n-1)+1\), \(A(1)=0\); \(A(n)=n-1\in\Theta(n)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>Size \(n\), basic operation — addition, one case. A call with \(n>1\) makes the recursive call (\(A(n-1)\) additions) and one addition: \(A(n)=A(n-1)+1\). For \(n=1\) it just returns \(A[0]\): \(A(1)=0\).</p>
+        <p>\(A(n)=A(n-i)+i\); with \(i=n-1\): \(A(n)=A(1)+n-1=n-1\). The loop version also makes \(n-1\) additions — the recursion adds only stack memory.</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-a3">
+      <div class="ph"><span class="lvl a">A3</span><h4>A growing step</h4></div>
+      <div class="pb"><p>Solve: \(x(n)=x(n-1)+n\) for \(n>0\), \(x(0)=0\). (Use backward substitutions, not the result from §2.2 — then compare.)</p></div>
+      <details><summary>Hint</summary><div><p>The added terms are \(n, n-1, n-2,\dots\) — not \(n,n,n,\dots\)</p></div></details>
+      <details><summary>Answer</summary><div><p>\(x(n)=\frac{n(n+1)}{2}\in\Theta(n^2)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>\(x(n)=x(n-1)+n=x(n-2)+(n-1)+n=\dots=x(n-i)+(n-i+1)+\dots+n\). With \(i=n\): \(x(n)=0+1+2+\dots+n=\frac{n(n+1)}2\) by S2.</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-a4">
+      <div class="ph"><span class="lvl a">A4</span><h4>Doubling</h4></div>
+      <div class="pb"><p>Solve: \(x(n)=2x(n-1)\) for \(n>1\), \(x(1)=3\).</p></div>
+      <details><summary>Hint</summary><div><p>After \(i\) substitutions: \(2^i x(n-i)\). Which \(i\) gives \(x(1)\)?</p></div></details>
+      <details><summary>Answer</summary><div><p>\(x(n)=3\cdot2^{n-1}\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>\(x(n)=2x(n-1)=2^2x(n-2)=\dots=2^ix(n-i)\). Put \(i=n-1\): \(x(n)=2^{n-1}x(1)=3\cdot2^{n-1}\). Check: \(x(1)=3\), \(x(2)=6\), \(x(3)=12=3\cdot2^2\). ✓</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-b1">
+      <div class="ph"><span class="lvl b">B1</span><h4>An exponential step</h4></div>
+      <div class="pb"><p>Solve: \(x(n)=x(n-1)+2^n\) for \(n>0\), \(x(0)=1\).</p></div>
+      <details><summary>Hint</summary><div><p>After reaching \(x(0)\) you get \(1+2^1+2^2+\dots+2^n\). Use S4.</p></div></details>
+      <details><summary>Answer</summary><div><p>\(x(n)=2^{n+1}-1\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>\(x(n)=x(n-1)+2^n=x(n-2)+2^{n-1}+2^n=\dots=x(n-i)+2^{n-i+1}+\dots+2^n\). With \(i=n\): \(x(n)=x(0)+2^1+\dots+2^n=1+\sum_{j=1}^{n}2^j=\sum_{j=0}^{n}2^j=2^{n+1}-1\). Check: \(x(1)=1+2=3=2^2-1\). ✓</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-b2">
+      <div class="ph"><span class="lvl b">B2</span><h4>Dividing by three</h4></div>
+      <div class="pb"><p>Solve for \(n=3^k\): \(x(n)=x(n/3)+1\) for \(n>1\), \(x(1)=1\). Give the order of growth for all \(n\).</p></div>
+      <details><summary>Hint</summary><div><p>Write \(n=3^k\), so \(n/3=3^{k-1}\), and substitute in \(k\).</p></div></details>
+      <details><summary>Answer</summary><div><p>\(x(n)=\log_3 n+1\); \(x(n)\in\Theta(\log n)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>\(x(3^k)=x(3^{k-1})+1=x(3^{k-2})+2=\dots=x(3^{k-i})+i\). With \(i=k\): \(x(3^k)=x(1)+k=k+1\). Since \(k=\log_3n\): \(x(n)=\log_3n+1\). By the smoothness rule \(x(n)\in\Theta(\log n)\) for all \(n\); the base of the logarithm only changes a constant factor: \(\log_3 n=\log_2 n/\log_2 3\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-b3">
+      <div class="ph"><span class="lvl b">B3</span><h4>What does it compute?</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> Cube(n)
+    <i>// n ≥ 1</i>
+    <b>if</b> n = 1 <b>return</b> 1
+    <b>else return</b> Cube(n − 1) + 3 * n * n − 3 * n + 1</pre>
+        <p>(a) What value does the algorithm return? (b) Set up and solve a recurrence for the number of multiplications.</p>
+      </div>
+      <details><summary>Hint</summary><div><p>(a) Compute Cube(2), Cube(3) and guess; then expand \(n^3-(n-1)^3\). (b) Count the multiplications in one call: <code>3 * n * n</code> and <code>3 * n</code>.</p></div></details>
+      <details><summary>Answer</summary><div><p>(a) \(n^3\); (b) \(M(n)=M(n-1)+3\), \(M(1)=0\); \(M(n)=3(n-1)\in\Theta(n)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>(a) Let \(Q(n)\) be the value returned. \(Q(1)=1\), \(Q(2)=1+12-6+1=8\), \(Q(3)=8+27-9+1=27\). Guess \(Q(n)=n^3\). Proof by induction: base \(Q(1)=1=1^3\); step: \(Q(n)=(n-1)^3+3n^2-3n+1=n^3-3n^2+3n-1+3n^2-3n+1=n^3\). ✓</p>
+        <p>(b) Each call with \(n>1\) makes 2 multiplications in <code>3 * n * n</code> and 1 in <code>3 * n</code>: \(M(n)=M(n-1)+3\), \(M(1)=0\). Then \(M(n)=M(n-i)+3i\), with \(i=n-1\): \(M(n)=3(n-1)\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-b4">
+      <div class="ph"><span class="lvl b">B4</span><h4>Three recursive calls</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> Draw(n)
+    <i>// draws a fractal of order n ≥ 0</i>
+    draw one segment
+    <b>if</b> n > 0
+        Draw(n − 1);  Draw(n − 1);  Draw(n − 1)</pre>
+        <p>Let \(C(n)\) be the total number of calls of <code>Draw</code> (including the first one), which equals the number of segments drawn. Set up a recurrence, draw the recursion tree for \(n=2\) and find \(C(n)\).</p>
+      </div>
+      <details><summary>Hint</summary><div><p>One call for itself plus three subtrees: \(C(n)=3C(n-1)+1\). Level \(l\) of the tree has \(3^l\) nodes.</p></div></details>
+      <details><summary>Answer</summary><div><p>\(C(n)=3C(n-1)+1\), \(C(0)=1\); \(C(n)=\frac{3^{n+1}-1}{2}\in\Theta(3^n)\). For \(n=2\): 13.</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p><b>Recurrence:</b> \(C(n)=3C(n-1)+1\) for \(n>0\), \(C(0)=1\).</p>
+        <p><b>Tree for \(n=2\):</b> level 0 — one call Draw(2); level 1 — three calls Draw(1); level 2 — nine calls Draw(0). Total \(1+3+9=13\).</p>
+        <p><b>General:</b> the tree has levels \(0,\dots,n\) with \(3^l\) nodes each: \(C(n)=\sum_{l=0}^{n}3^l=\frac{3^{n+1}-1}{2}\) by S4. The same by backward substitution: \(C(n)=3^iC(n-i)+(3^{i-1}+\dots+1)\); with \(i=n\): \(3^n+\frac{3^n-1}{2}=\frac{3^{n+1}-1}{2}\). ✓</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-c1">
+      <div class="ph"><span class="lvl c">C1</span><h4>Divide in two, do linear work — and prove it</h4></div>
+      <div class="pb"><p>An algorithm splits an array of size \(n\) into two halves, solves each half recursively and then does \(n\) extra comparisons to combine the results. So \(x(n)=2x(n/2)+n\) for \(n>1\), \(x(1)=0\). Solve for \(n=2^k\) by backward substitutions and prove the result by induction on \(k\).</p></div>
+      <details><summary>Hint</summary><div><p>Write \(x(2^k)=2x(2^{k-1})+2^k\). After \(i\) steps: \(2^ix(2^{k-i})+i\cdot2^k\).</p></div></details>
+      <details><summary>Answer</summary><div><p>\(x(n)=n\log_2 n\in\Theta(n\log n)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <div class="mathblock">\[ \begin{aligned}x(2^k)&=2x(2^{k-1})+2^k=2\big[2x(2^{k-2})+2^{k-1}\big]+2^k=2^2x(2^{k-2})+2\cdot2^k\\&=2^3x(2^{k-3})+3\cdot2^k=\dots=2^ix(2^{k-i})+i\cdot2^k.\end{aligned} \]</div>
+        <p>With \(i=k\): \(x(2^k)=2^kx(1)+k2^k=k\,2^k\). Since \(n=2^k\), \(k=\log_2 n\): \(x(n)=n\log_2n\).</p>
+        <p><b>Proof by induction on \(k\).</b> Claim: \(x(2^k)=k2^k\) for all \(k\ge0\).</p>
+        <ul>
+          <li>Base \(k=0\): \(x(1)=0=0\cdot2^0\). ✓</li>
+          <li>Step: assume \(x(2^{k-1})=(k-1)2^{k-1}\). Then \(x(2^k)=2(k-1)2^{k-1}+2^k=(k-1)2^k+2^k=k2^k\). ✓</li>
+        </ul>
+        <p>The function \(n\log n\) is smooth, so \(x(n)\in\Theta(n\log n)\) for all \(n\). (This is the recurrence of mergesort.)</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-c2">
+      <div class="ph"><span class="lvl c">C2</span><h4>Fast exponentiation for any n</h4></div>
+      <div class="pb">
+<pre class="pseudo"><b>ALGORITHM</b> PowerAny(x, n)
+    <i>// n ≥ 0</i>
+    <b>if</b> n = 0 <b>return</b> 1
+    h ← PowerAny(x, ⌊n/2⌋)
+    <b>if</b> n is even <b>return</b> h * h
+    <b>else return</b> h * h * x</pre>
+        <p>Let \(M(n)\) be the number of multiplications. (a) Write the recurrence. (b) Show that for \(n\ge1\), \(M(n)=b(n)+\nu(n)\), where \(b(n)=\lfloor\log_2 n\rfloor+1\) is the number of bits of \(n\) and \(\nu(n)\) is the number of ones in its binary representation. (c) Give the best and worst case among \(n\) with the same number of bits and the efficiency class.</p>
+      </div>
+      <details><summary>Hint</summary><div><p>Halving \(n\) removes its last bit. The last bit is 1 exactly when \(n\) is odd. Prove (b) by strong induction: \(b(n)=b(\lfloor n/2\rfloor)+1\).</p></div></details>
+      <details><summary>Answer</summary><div><p>(a) \(M(n)=M(\lfloor n/2\rfloor)+1\) for even \(n\ge 2\), \(M(n)=M(\lfloor n/2\rfloor)+2\) for odd \(n\), \(M(0)=0\). (c) Best \(n=2^{b-1}\): \(M=b+1\); worst \(n=2^b-1\): \(M=2b\). \(M(n)\in\Theta(\log n)\).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>(a) Even \(n\): one multiplication <code>h * h</code>; odd \(n\): two. \(M(0)=0\).</p>
+        <p>(b) Strong induction on \(n\ge1\). Base \(n=1\): \(M(1)=M(0)+2=2\); \(b(1)=1\), \(\nu(1)=1\), sum 2. ✓ Step: let \(n\ge2\) and \(m=\lfloor n/2\rfloor\ge1\). Then \(b(n)=b(m)+1\), and \(\nu(n)=\nu(m)+(n\bmod2)\) because halving drops the last bit. If \(n\) is even: \(M(n)=M(m)+1=b(m)+\nu(m)+1=b(n)+\nu(n)\). If \(n\) is odd: \(M(n)=M(m)+2=b(m)+\nu(m)+2=(b(n)-1)+(\nu(n)-1)+2=b(n)+\nu(n)\). ✓</p>
+        <p>(c) Among numbers with \(b\) bits, \(\nu\) is between 1 (for \(2^{b-1}\)) and \(b\) (for \(2^b-1\)). So \(b+1\le M(n)\le 2b\), i.e. \(\lfloor\log_2n\rfloor+2\le M(n)\le2\lfloor\log_2n\rfloor+2\). Both bounds are \(\Theta(\log n)\). Examples: \(M(16)=5+1=6\), \(M(15)=4+4=8\), \(M(1000)=10+6=16\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-m1">
+      <div class="ph"><span class="lvl m">M1</span><h4>Find the mistake: a frozen n</h4></div>
+      <div class="pb">
+        <div class="note"><span class="lbl">Student's solution</span>"\(x(n)=x(n-1)+n\), \(x(0)=0\). Substituting: \(x(n)=x(n-1)+n=x(n-2)+n+n=x(n-3)+3n=\dots=x(n-i)+i\cdot n\). With \(i=n\): \(x(n)=n^2\)."</div>
+        <p>Find the mistake and give the correct answer. Check both answers for \(n=3\).</p>
+      </div>
+      <details><summary>Hint</summary><div><p>What is \(x(n-1)\) according to the recurrence? Replace \(n\) by \(n-1\) <i>everywhere</i>.</p></div></details>
+      <details><summary>Answer</summary><div><p>\(x(n-1)=x(n-2)+(n-1)\), not \(x(n-2)+n\). Correct: \(x(n)=\frac{n(n+1)}{2}\). For \(n=3\): true value 6, student's 9.</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>The student substituted the recurrence but kept the term \(n\) unchanged. In the recurrence for \(x(n-1)\) the added term is \(n-1\): \(x(n)=x(n-2)+(n-1)+n\), then \(x(n-3)+(n-2)+(n-1)+n\), and so on. With \(i=n\): \(x(n)=1+2+\dots+n=\frac{n(n+1)}2\).</p>
+        <p>Check \(n=3\): \(x(1)=1\), \(x(2)=3\), \(x(3)=6\); \(\frac{3\cdot4}2=6\) ✓, but \(3^2=9\) ✗. The order \(\Theta(n^2)\) happens to agree, but the exact formula does not. Always test a solved recurrence on two or three small \(n\).</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-m2">
+      <div class="ph"><span class="lvl m">M2</span><h4>Find the mistake: the wrong initial condition</h4></div>
+      <div class="pb">
+        <div class="note"><span class="lbl">Student's solution</span>"BinRec(n) returns 1 for \(n=1\), so \(A(1)=1\). Then \(A(n)=A(n/2)+1\) and for \(n=2^k\): \(A(2^k)=A(1)+k=\log_2 n+1\) additions."</div>
+        <p>Find the mistake. How many additions does BinRec(16) really make?</p>
+      </div>
+      <details><summary>Hint</summary><div><p>Confuse not the <i>value returned</i> with the <i>number of operations</i>. Is there an addition in the line <code>if n = 1 return 1</code>?</p></div></details>
+      <details><summary>Answer</summary><div><p>The initial condition must be \(A(1)=0\). Correct: \(A(n)=\log_2n\); BinRec(16) makes 4 additions (the student's formula gives 5).</p></div></details>
+      <details><summary>Solution</summary><div>
+        <p>The student used the <b>value</b> returned at \(n=1\) as the <b>count</b>. The base case returns 1 without any addition, so \(A(1)=0\). Then \(A(2^k)=A(1)+k=k=\log_2n\).</p>
+        <p>BinRec(16) → BinRec(8)+1 → BinRec(4)+1 → BinRec(2)+1 → BinRec(1)+1: four additions. (The value returned is 5, the number of bits of 16 — that is where the student's number came from.)</p>
+      </div></details>
+    </article>
+
+    <article class="prob" id="p2-e1">
+      <div class="ph"><span class="lvl e">E1</span><h4>Empirical check: three Fibonacci algorithms</h4></div>
+      <div class="pb">
+        <p>Implement FibRec, FibMemo and FibIter in Python with an addition counter. For \(n=5,10,15,20,25\) print the three counts and compare with the formulas \(F(n+1)-1\) and \(n-1\). Also measure the ratio of naive counts for consecutive \(n\) (e.g. \(A(25)/A(24)\)). What number does it approach?</p>
+      </div>
+      <details><summary>Hint</summary><div><p>Use a list <code>cnt = [0]</code> or a global variable for the counter so that all recursive calls can increase it. Compute \(F(n+1)\) with a loop to compare.</p></div></details>
+      <details><summary>Answer</summary><div><p>Naive: 7, 88, 986, 10945, 121392 = \(F(n+1)-1\); memo and iterative: \(n-1\). The ratio \(A(n)/A(n-1)\) approaches \(\varphi\approx1.618\).</p></div></details>
+      <details><summary>Solution</summary><div>
+<pre class="py"><span class="k">def</span> fib_rec(n, cnt):
+    <span class="k">if</span> n &lt;= 1:
+        <span class="k">return</span> n
+    cnt[0] += 1                                   <span class="c"># one addition per call with n > 1</span>
+    <span class="k">return</span> fib_rec(n - 1, cnt) + fib_rec(n - 2, cnt)
+
+<span class="k">def</span> fib_memo(n, cnt, memo=None):
+    <span class="k">if</span> memo <span class="k">is</span> None:
+        memo = {0: 0, 1: 1}
+    <span class="k">if</span> n <span class="k">not in</span> memo:
+        memo[n] = fib_memo(n - 1, cnt, memo) + fib_memo(n - 2, cnt, memo)
+        cnt[0] += 1
+    <span class="k">return</span> memo[n]
+
+<span class="k">def</span> fib_iter(n, cnt):
+    a, b = 0, 1
+    <span class="k">for</span> _ <span class="k">in</span> range(2, n + 1):
+        a, b = b, a + b
+        cnt[0] += 1
+    <span class="k">return</span> b <span class="k">if</span> n >= 1 <span class="k">else</span> 0
+
+<span class="k">def</span> F(n):                                      <span class="c"># reference values</span>
+    a, b = 0, 1
+    <span class="k">for</span> _ <span class="k">in</span> range(n):
+        a, b = b, a + b
+    <span class="k">return</span> a
+
+<span class="k">for</span> n <span class="k">in</span> [5, 10, 15, 20, 25]:
+    c1, c2, c3 = [0], [0], [0]
+    fib_rec(n, c1); fib_memo(n, c2); fib_iter(n, c3)
+    <span class="k">assert</span> c1[0] == F(n + 1) - 1 <span class="k">and</span> c2[0] == c3[0] == n - 1
+    print(n, c1[0], c2[0], c3[0])
+
+a24, a25 = [0], [0]
+fib_rec(24, a24); fib_rec(25, a25)
+print(a25[0] / a24[0])                           <span class="c"># ≈ 1.618</span></pre>
+<div class="tscroll"><table class="t"><thead><tr><th>n</th><th>naive</th><th>F(n+1) − 1</th><th>memo</th><th>iterative</th></tr></thead><tbody>
+<tr><td class="n">5</td><td class="n">7</td><td class="n">7</td><td class="n">4</td><td class="n">4</td></tr>
+<tr><td class="n">10</td><td class="n">88</td><td class="n">88</td><td class="n">9</td><td class="n">9</td></tr>
+<tr><td class="n">15</td><td class="n">986</td><td class="n">986</td><td class="n">14</td><td class="n">14</td></tr>
+<tr><td class="n">20</td><td class="n">10 945</td><td class="n">10 945</td><td class="n">19</td><td class="n">19</td></tr>
+<tr><td class="n">25</td><td class="n">121 392</td><td class="n">121 392</td><td class="n">24</td><td class="n">24</td></tr>
+</tbody></table></div>
+        <p><b>Conclusion.</b> All counts match the formulas. \(A(25)/A(24)=121392/75024\approx1.6180\), which is \(\varphi\): every increase of \(n\) by one multiplies the naive work by about 1.618, the signature of exponential growth \(\Theta(\varphi^n)\). The memoized and iterative versions grow by exactly one addition per step.</p>
+      </div></details>
+    </article>
+
+    <div class="lab" id="lab2">
+      <div class="row">
+        <label for="lab2Alg">Counter lab</label>
+        <select id="lab2Alg">
+          <option value="fact">Factorial — n</option>
+          <option value="hanoi">Hanoi — 2ⁿ − 1</option>
+          <option value="binrec">BinRec — ⌊log₂ n⌋</option>
+          <option value="recmax">RecMax — n − 1</option>
+          <option value="pow">PowerAny — ⌊log₂ n⌋ + 1 + ν(n)</option>
+          <option value="fib">FibRec — F(n+1) − 1</option>
+          <option value="draw">Draw — (3ⁿ⁺¹ − 1)/2</option>
+        </select>
+        <button type="button" id="lab2Run">Count</button>
+      </div>
+      <div class="tscroll"><table class="t" id="lab2Table"><thead><tr><th>n</th><th>counted</th><th>formula</th><th>match</th></tr></thead><tbody></tbody></table></div>
+      <p class="small muted" style="margin:0">Runs the recursive algorithm in your browser with a counter and compares with the solved recurrence.</p>
+    </div>
+  </section>
+
+  <section class="sec wide" id="m2-summary">
+    <h3><span class="num">2.9</span>Summary and cheat sheet</h3>
+    <div style="max-width:var(--measure)">
+      <ul>
+        <li>The work of a recursive algorithm is described by a recurrence relation plus an initial condition; the initial condition is the <i>count</i> at the base case, not the value returned.</li>
+        <li>Backward substitutions: substitute 2–3 times, find the pattern after \(i\) steps, reach the initial condition, simplify with the sums of Module 1, prove by induction.</li>
+        <li>For recurrences with \(n/2\), solve for \(n=2^k\) and extend with the smoothness rule.</li>
+        <li>A recursion tree counts calls level by level: \(a\) calls per node give \(a^l\) nodes on level \(l\).</li>
+        <li>Repeated subproblems (naive Fibonacci) make recursion exponential; memoization or iteration removes them.</li>
+        <li>Recursion uses stack memory proportional to its depth; loops and optimised tail calls do not.</li>
+      </ul>
+    </div>
+    <div class="cheat">
+      <div><span class="lbl">Decrease by one</span>\[x(n)=x(n-1)+c\ \Rightarrow\ x(n)=x(0)+cn\]</div>
+      <div><span class="lbl">Growing step</span>\[x(n)=x(n-1)+n,\ x(0)=0\ \Rightarrow\ \tfrac{n(n+1)}2\]</div>
+      <div><span class="lbl">Hanoi</span>\[M(n)=2M(n-1)+1,\ M(1)=1\ \Rightarrow\ 2^n-1\]</div>
+      <div><span class="lbl">Halving</span>\[A(n)=A(n/2)+1,\ A(1)=0\ \Rightarrow\ \log_2 n\]</div>
+      <div><span class="lbl">Divide and combine</span>\[x(n)=2x(n/2)+n,\ x(1)=0\ \Rightarrow\ n\log_2 n\]</div>
+      <div><span class="lbl">Naive Fibonacci</span>\[A(n)=F(n+1)-1\in\Theta(\varphi^n)\]</div>
+      <div><span class="lbl">x(n) = a·x(n−1) + 1, after i steps</span>\[x(n)=a^i x(n-i)+\sum_{j=0}^{i-1}a^j\]</div>
+      <div><span class="lbl">a calls per node</span>\[\text{level } l \text{ has } a^l \text{ nodes}\]</div>
+    </div>
+  </section>
+  <div class="pagenav"><a href="#m1">← Module 1</a><a href="#glossary">Glossary →</a></div>
+</div>
+
+<!-- ============================== REFERENCE ============================== -->
+<div class="chapter" id="back">
+  <header><div class="kicker">Reference</div><h2>Glossary, sources and results</h2></header>
+
+  <section class="sec" id="glossary">
+    <h3>Glossary</h3>
+    <dl class="gloss">
+      <dt>Average case</dt><dd>The expected number of basic operations over all inputs of size \(n\), under stated probability assumptions.</dd>
+      <dt>Backward substitutions</dt><dd>A method of solving a recurrence: substitute it into itself repeatedly, find the pattern after \(i\) steps, then reach the initial condition.</dd>
+      <dt>Basic operation</dt><dd>The operation that contributes most to the running time; we count how many times it runs.</dd>
+      <dt>Best case</dt><dd>The smallest number of basic operations over all inputs of size \(n\).</dd>
+      <dt>Big-O, \(O(g(n))\)</dt><dd>The set of functions that grow no faster than \(g(n)\), up to a constant factor, for large \(n\). An upper bound.</dd>
+      <dt>Big-Omega, \(\Omega(g(n))\)</dt><dd>The set of functions that grow at least as fast as \(g(n)\). A lower bound.</dd>
+      <dt>Big-Theta, \(\Theta(g(n))\)</dt><dd>Functions with the same order of growth as \(g(n)\): both \(O\) and \(\Omega\).</dd>
+      <dt>Efficiency class</dt><dd>The order of growth of an algorithm's count, e.g. linear \(\Theta(n)\) or quadratic \(\Theta(n^2)\).</dd>
+      <dt>Geometric series</dt><dd>The sum \(1+a+a^2+\dots+a^n=\frac{a^{n+1}-1}{a-1}\).</dd>
+      <dt>Initial condition</dt><dd>The value of a recurrence at its smallest argument; it makes the solution unique. For algorithms, the count at the base case.</dd>
+      <dt>Input size</dt><dd>A parameter \(n\) measuring how large the input is: number of elements, matrix order or number of bits of a number.</dd>
+      <dt>Mathematical induction</dt><dd>A proof method: prove the statement for the base value, then prove that if it holds for \(n-1\) it holds for \(n\).</dd>
+      <dt>Memoization</dt><dd>Storing results of subproblems in a table so that each one is computed only once.</dd>
+      <dt>Order of growth</dt><dd>How fast a function increases as \(n\to\infty\), ignoring constant factors and lower-order terms.</dd>
+      <dt>Recurrence relation</dt><dd>An equation that defines \(x(n)\) through values of \(x\) at smaller arguments, e.g. \(x(n)=2x(n-1)+1\).</dd>
+      <dt>Recursion depth</dt><dd>The longest chain of recursive calls that are active at the same time; it equals the extra stack memory used.</dd>
+      <dt>Recursion tree</dt><dd>A diagram with one node per call; children are the calls it makes. Counting nodes level by level solves many recurrences.</dd>
+      <dt>Smoothness rule</dt><dd>If a count is \(\Theta(g(n))\) for \(n=2^k\), the count is nondecreasing and \(g\) is smooth (\(g(2n)\in\Theta(g(n))\)), then it is \(\Theta(g(n))\) for all \(n\).</dd>
+      <dt>Tail call</dt><dd>A recursive call that is the last action of a function; its result is returned unchanged. It can be replaced by a loop.</dd>
+      <dt>Worst case</dt><dd>The largest number of basic operations over all inputs of size \(n\); a guaranteed upper limit.</dd>
+    </dl>
+  </section>
+
+  <section class="sec" id="sources">
+    <h3>Sources</h3>
+    <ol class="refs">
+      <li>Levitin A. <i>Introduction to the Design and Analysis of Algorithms</i>, 3rd ed. Pearson, 2012. Sections 2.1–2.5; Appendices A (summation formulas) and B (recurrences, smoothness rule).</li>
+      <li>Cormen T. H., Leiserson C. E., Rivest R. L., Stein C. <i>Introduction to Algorithms</i>, 4th ed. MIT Press, 2022. Chapters 3, 4; Appendix A.</li>
+      <li>Sedgewick R., Wayne K. <i>Algorithms</i>, 4th ed. Addison-Wesley, 2011. Section 1.4 (analysis and experiments).</li>
+      <li>Kleinberg J., Tardos É. <i>Algorithm Design</i>. Pearson, 2005. Chapters 2, 5.</li>
+      <li>Graham R. L., Knuth D. E., Patashnik O. <i>Concrete Mathematics</i>, 2nd ed. Addison-Wesley, 1994. Chapters 1, 2, 7.</li>
+      <li>Lecture 4. <i>Mathematical Analysis of Nonrecursive Algorithms</i> (course materials).</li>
+      <li>Lecture 5. <i>Mathematical Analysis of Recursive Algorithms</i> (course materials).</li>
+    </ol>
+    <p class="small muted">Examples 1.6, 1.7, 2.4, 2.5 and all problems were written for this textbook. Every formula in the book was checked by an operation-counting Python program (file <a href="code/analysis_counters.py"><code>analysis_counters.py</code></a>).</p>
+  </section>
+
+  <section class="sec" id="results">
+    <h3>My results</h3>
+    <div class="results-panel" id="resultsPanel">
+      <p class="muted">When you finish a quiz, your score is saved in this browser. Your best score and the number of attempts appear in the table below. Scores stay on this device only and are not sent anywhere.</p>
+      <div class="tscroll"><table class="t" id="myTable"><thead><tr><th>Quiz</th><th>This visit</th><th>Best</th><th>Attempts</th><th>Last saved</th></tr></thead><tbody></tbody></table></div>
+      <button type="button" class="ghost" id="resClear">Clear my saved scores</button>
+    </div>
+  </section>
+  <div class="pagenav"><a href="#m2">← Module 2</a><a href="#intro">Back to the start ↑</a></div>
+</div>
+</main>
+</div>
+<script src="js/main.js"></script>
+</body>
+</html>
